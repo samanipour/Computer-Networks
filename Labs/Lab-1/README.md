@@ -1,83 +1,154 @@
 # **Lab 1: Creating a Basic LAN (Local Area Network)**  
-### **Objective:**  
-- Understand the concept of a LAN.  
-- Configure a basic **wired LAN** using Mikrotik Router and a Switch.  
-- Assign IP addresses to devices and test connectivity.  
+## **1. Lab Description and Objectives**  
 
-### **Required Equipment:**  
-- **Mikrotik hAP ac lite** Router  
-- **PC or Laptop** (2 or more)  
-- **GNS3** installed  
-- **Ethernet Cables**  
+### **Lab Description:**  
+In this lab, students will set up a simple Local Area Network (**LAN**) using a **Mikrotik hAP lite router** and a network switch (for GNS3 simulation). They will configure **IP addresses**, enable **basic connectivity**, and test the network using various commands like `ping` and `traceroute`.  
+
+### **Objectives:**  
+By the end of this lab, students should be able to:  
+✅ Understand the concept of LAN and its components.  
+✅ Assign **static IP addresses** to devices.  
+✅ Set up a **basic network topology** using physical and simulated devices.  
+✅ Verify connectivity between devices.  
+
+---
+
+## **2. Lab Setup and Instructions Using Real-World Devices (Mikrotik hAP lite)**  
+
+### **2.1 Required Equipment:**  
+- **Mikrotik hAP lite Router**  
+- **Two PCs/Laptops**  
+- **Ethernet cables**  
+
+### **2.2 Network Topology:**  
+```
++--------+        +--------------------+        +--------+
+|  PC 1  |--------|  Mikrotik hAP lite |--------|  PC 2  |
++--------+        +--------------------+        +--------+
+```
+  
+### **2.3 Step-by-Step Instructions:**  
+
+#### **Step 1: Physical Connection**  
+1. Connect **PC 1** to **Ether1** of the Mikrotik hAP lite router.  
+2. Connect **PC 2** to **Ether2** of the Mikrotik hAP lite router.  
+
+#### **Step 2: Configure Mikrotik Router**  
+
+1. Access the Mikrotik router:  
+   - Connect via **WinBox** or SSH (`192.168.88.1`).  
+   - Login with default credentials (**admin**, no password).  
+
+2. Assign IP addresses to the router:  
+   - Open **New Terminal** in WinBox and enter:  
+     ```sh
+     /ip address add address=192.168.1.1/24 interface=ether1
+     /ip address add address=192.168.1.2/24 interface=ether2
+     ```  
+
+#### **Step 3: Configure PC 1 and PC 2 with Static IPs**  
+- **PC 1 Configuration:**  
+  - IP Address: `192.168.1.10`  
+  - Subnet Mask: `255.255.255.0`  
+  - Gateway: `192.168.1.1`  
+
+- **PC 2 Configuration:**  
+  - IP Address: `192.168.1.20`  
+  - Subnet Mask: `255.255.255.0`  
+  - Gateway: `192.168.1.2`  
+
+#### **Step 4: Test Connectivity**  
+- From **PC 1**, open the command prompt and **ping** PC 2:  
+  ```sh
+  ping 192.168.1.20
+  ```  
+- From **PC 2**, **ping** PC 1:  
+  ```sh
+  ping 192.168.1.10
+  ```  
+- Run `tracert` to check the path between devices.  
+
+---
+
+## **3. Lab Setup and Instructions Using GNS3 Simulator**  
+
+### **3.1 Required GNS3 Devices:**  
+- **Mikrotik Router (CHR)**  
 - **Network Switch**  
+- **Two Virtual PCs (VPCS)**  
 
-### **Step 1: Understanding LAN**  
-- A **LAN** is a network that connects computers within a **limited area** (e.g., an office).  
-- Devices communicate via **IP addresses** assigned within the same subnet.  
+### **3.2 Network Topology in GNS3:**  
+```
++--------+        +----------+        +--------------+        +--------+
+|  PC 1  |--------|  Switch  |--------| Mikrotik CHR |--------|  PC 2  |
++--------+        +----------+        +--------------+        +--------+
+```
+  
+### **3.3 Step-by-Step Instructions in GNS3**  
 
-### **Step 2: Physical Connections**  
-1. **Power on the Mikrotik Router** and connect it to a **network switch**.  
-2. Connect **PCs to the switch** using **Ethernet cables**.  
-3. Check **LED indicators** to verify link status.  
+#### **Step 1: Creating the Topology**  
+1. **Open GNS3** and create a new project.  
+2. Drag and drop the following devices:  
+   - **Mikrotik Router (CHR)**  
+   - **Network Switch**  
+   - **Two Virtual PCs (VPCS)**  
+3. Connect the devices:  
+   - **PC 1 → Switch → Mikrotik Router → Switch → PC 2**  
 
-### **Step 3: Assigning IP Addresses**  
-1. Open **WinBox** and connect to the Mikrotik Router.  
-2. Navigate to **IP → Addresses** and add an IP:  
-   - **192.168.1.1/24** on **ether1** (router interface).  
-3. Assign **static IPs** on each **PC**:  
-   - **PC1:** 192.168.1.2/24  
-   - **PC2:** 192.168.1.3/24  
-4. Verify connectivity using `ping` in the command prompt:  
-   ```
-   ping 192.168.1.3
+#### **Step 2: Configure the Mikrotik Router**  
+1. Start the router and access the terminal.  
+2. Assign IP addresses:  
+   ```sh
+   /ip address add address=192.168.1.1/24 interface=ether1
+   /ip address add address=192.168.1.2/24 interface=ether2
    ```  
 
-### **Step 4: Testing LAN Connectivity**  
-- Use `ping` to check connectivity between **PCs**.  
-- If packets are lost, troubleshoot using:  
-  - `ipconfig /all` (Windows)  
-  - `ifconfig` (Linux/macOS)  
+#### **Step 3: Configure PC 1 and PC 2 in GNS3**  
+- Open the **VPCS Terminal** and assign static IPs:  
+  - **PC 1:**  
+    ```sh
+    ip 192.168.1.10 255.255.255.0 192.168.1.1
+    ```  
+  - **PC 2:**  
+    ```sh
+    ip 192.168.1.20 255.255.255.0 192.168.1.2
+    ```  
 
-### **Conclusion:**  
-- Successfully set up a **LAN**.  
-- Verified **connectivity between devices**.  
-- Ready for **Lab 2: VLAN Configuration**.  
+#### **Step 4: Test Connectivity**  
+1. **Ping between PCs:**  
+   - From **PC 1**, run:  
+     ```sh
+     ping 192.168.1.20
+     ```  
+   - From **PC 2**, run:  
+     ```sh
+     ping 192.168.1.10
+     ```  
+2. **Run Traceroute** to check network path:  
+   ```sh
+   traceroute 192.168.1.20
+   ```
+
+---
+
+## **4. Lab Exercises (Using GNS3)**  
+
+### **Exercise 1: Verify Connectivity**  
+- Use `ping` to test communication between devices.  
+- Use `traceroute` to check the routing path.  
+
+### **Exercise 2: Assign Dynamic IPs (Bonus Task)**  
+- Instead of static IPs, configure **DHCP on the Mikrotik router**:  
+  ```sh
+  /ip dhcp-server add interface=ether1 address-pool=dhcp_pool
+  /ip pool add name=dhcp_pool ranges=192.168.1.50-192.168.1.100
+  /ip dhcp-server network add address=192.168.1.0/24 gateway=192.168.1.1
+  ```  
+- Configure **PC 1 and PC 2** to obtain IPs dynamically and verify using `ipconfig` or `ifconfig`.  
 
 ---
 
-## **Lab 2: Configuring VLANs (Virtual Local Area Networks)**  
-### **Objective:**  
-- Understand and configure VLANs on a **Mikrotik switch**.  
-- Isolate network traffic using VLANs.  
-
-### **Required Equipment:**  
-- **Mikrotik hAP ac lite Router**  
-- **Managed Switch** (supports VLANs)  
-- **PCs (2 or more)**  
-- **Ethernet cables**  
-- **GNS3 setup**  
-
-### **Step 1: Understanding VLANs**  
-- VLANs separate network traffic at **Layer 2 (Data Link Layer)**.  
-- Each VLAN acts as a separate **logical network**.  
-
-### **Step 2: Configuring VLANs on the Switch**  
-1. Open **WinBox** and go to **Bridge**.  
-2. Create **VLAN IDs**:  
-   - VLAN **10** (for Sales Department)  
-   - VLAN **20** (for IT Department)  
-3. Assign ports to VLANs:  
-   - **ether2 → VLAN 10**  
-   - **ether3 → VLAN 20**  
-
-### **Step 3: Assigning IPs and Testing**  
-1. Assign VLAN **10** IPs to **PC1 (192.168.10.2/24)**.  
-2. Assign VLAN **20** IPs to **PC2 (192.168.20.2/24)**.  
-3. Test VLAN isolation using `ping`.  
-
-### **Conclusion:**  
-- Successfully created **VLANs**.  
-- Verified network isolation.  
-- Ready for **Lab 3: Configuring Inter-VLAN Routing**.  
-
----
+## **5. Summary**  
+✅ **Successfully set up a basic LAN using Mikrotik Router and Switch (GNS3).**  
+✅ **Configured static and dynamic IP addresses.**  
+✅ **Tested connectivity with `ping` and `traceroute`.**  
