@@ -1,121 +1,155 @@
 # **Lab 2: Configuring VLANs**  
-**Objective:**  
-- Understand **Virtual LANs (VLANs)** and their benefits.  
-- Configure VLANs on a **Mikrotik Router** and a **Managed Switch**.  
-- Verify VLAN segmentation using **ping tests**.  
+
+## **1. Lab Description and Objectives**  
+
+### **Lab Description:**  
+In this lab, students will set up a simple Local Area Network (**LAN**) using a **Mikrotik hAP lite router** and a network switch (for GNS3 simulation). They will configure **IP addresses**, enable **basic connectivity**, and test the network using various commands like `ping` and `traceroute`.  
+
+### **Objectives:**  
+By the end of this lab, students should be able to:  
+✅ Understand the concept of LAN and its components.  
+✅ Assign **static IP addresses** to devices.  
+✅ Set up a **basic network topology** using physical and simulated devices.  
+✅ Verify connectivity between devices.  
 
 ---
 
-## **1. Overview of VLANs**  
-### **What is a VLAN?**  
-A **VLAN (Virtual Local Area Network)** is a logical network that **segments devices into groups**, even if they are connected to the same switch.  
+## **2. Lab Setup and Instructions Using Real-World Devices (Mikrotik hAP lite)**  
 
-### **Why Use VLANs?**  
-- **Security**: Devices in different VLANs cannot communicate unless explicitly allowed.  
-- **Performance**: Reduces network congestion by limiting broadcast traffic.  
-- **Flexibility**: Devices can be grouped **logically** instead of being restricted by physical location.  
-
----
-
-## **2. Lab Setup & Required Equipment**  
-### **Equipment:**  
-- **Mikrotik hAP ac lite Router**  
-- **Managed Switch** (supports VLANs)  
-- **Two PCs (one in VLAN 10, one in VLAN 20)**  
+### **2.1 Required Equipment:**  
+- **Mikrotik hAP lite Router**  
+- **Two PCs/Laptops**  
 - **Ethernet cables**  
-- **GNS3 (optional, for virtual lab)**  
 
-### **Network Topology:**  
-
-| VLAN | Network Address | Assigned Device | Switch Port | Router Interface |  
-|------|---------------|----------------|--------------|------------------|  
-| VLAN 10 (Sales) | 192.168.10.0/24 | PC1 (Sales) | ether2 | VLAN10 on ether1 |  
-| VLAN 20 (IT) | 192.168.20.0/24 | PC2 (IT) | ether3 | VLAN20 on ether1 |  
-
-- The **router’s ether1** will act as a **trunk port** (carrying VLAN-tagged traffic).  
-- The **switch ports** will be assigned to specific VLANs.  
-
----
-
-## **3. Step-by-Step Configuration**  
-### **Step 1: Configure VLANs on the Managed Switch**  
-#### **1.1 Access the Switch**  
-1. Open **WinBox** or use **GNS3 CLI**.  
-2. Navigate to **Bridge → VLANs**.  
-
-#### **1.2 Create VLANs**  
-- Add **VLAN 10 (Sales)**.  
-- Add **VLAN 20 (IT)**.  
-
-#### **1.3 Assign VLANs to Ports**  
-- Assign **ether2** to **VLAN 10**.  
-- Assign **ether3** to **VLAN 20**.  
-- Set **ether1** as a **trunk port** (carries VLAN-tagged traffic).  
-
----
-
-### **Step 2: Configure VLANs on the Mikrotik Router**  
-#### **2.1 Open WinBox and Access the Router**  
-1. Connect to the Mikrotik router via **WinBox**.  
-2. Go to **Interfaces**.  
-
-#### **2.2 Create VLAN Interfaces**  
-- Add **VLAN 10** and **VLAN 20** to the router’s trunk interface (ether1):  
-
+### **2.2 Network Topology:**  
 ```
-/interface vlan add name=VLAN10 vlan-id=10 interface=ether1
-/interface vlan add name=VLAN20 vlan-id=20 interface=ether1
++--------+        +--------------------+        +--------+
+|  PC 1  |--------|  Mikrotik hAP lite |--------|  PC 2  |
++--------+        +--------------------+        +--------+
 ```
+  
+### **2.3 Step-by-Step Instructions:**  
 
-#### **2.3 Assign IP Addresses to VLAN Interfaces**  
-- Assign an IP address for each VLAN:  
+#### **Step 1: Physical Connection**  
+1. Connect **PC 1** to **Ether1** of the Mikrotik hAP lite router.  
+2. Connect **PC 2** to **Ether2** of the Mikrotik hAP lite router.  
 
+#### **Step 2: Configure Mikrotik Router**  
+
+1. Access the Mikrotik router:  
+   - Connect via **WinBox** or SSH (`192.168.88.1`).  
+   - Login with default credentials (**admin**, no password).  
+
+2. Assign IP addresses to the router:  
+   - Open **New Terminal** in WinBox and enter:  
+     ```sh
+     /ip address add address=192.168.1.1/24 interface=ether1
+     /ip address add address=192.168.1.2/24 interface=ether2
+     ```  
+
+#### **Step 3: Configure PC 1 and PC 2 with Static IPs**  
+- **PC 1 Configuration:**  
+  - IP Address: `192.168.1.10`  
+  - Subnet Mask: `255.255.255.0`  
+  - Gateway: `192.168.1.1`  
+
+- **PC 2 Configuration:**  
+  - IP Address: `192.168.1.20`  
+  - Subnet Mask: `255.255.255.0`  
+  - Gateway: `192.168.1.2`  
+
+#### **Step 4: Test Connectivity**  
+- From **PC 1**, open the command prompt and **ping** PC 2:  
+  ```sh
+  ping 192.168.1.20
+  ```  
+- From **PC 2**, **ping** PC 1:  
+  ```sh
+  ping 192.168.1.10
+  ```  
+- Run `tracert` to check the path between devices.  
+
+---
+
+## **3. Lab Setup and Instructions Using GNS3 Simulator**  
+
+### **3.1 Required GNS3 Devices:**  
+- **Mikrotik Router (CHR)**  
+- **Network Switch**  
+- **Two Virtual PCs (VPCS)**  
+
+### **3.2 Network Topology in GNS3:**  
 ```
-/ip address add address=192.168.10.1/24 interface=VLAN10
-/ip address add address=192.168.20.1/24 interface=VLAN20
++--------+        +----------+        +--------------+        +--------+
+|  PC 1  |--------|  Switch  |--------| Mikrotik CHR |--------|  PC 2  |
++--------+        +----------+        +--------------+        +--------+
 ```
+  
+### **3.3 Step-by-Step Instructions in GNS3**  
+
+#### **Step 1: Creating the Topology**  
+1. **Open GNS3** and create a new project.  
+2. Drag and drop the following devices:  
+   - **Mikrotik Router (CHR)**  
+   - **Network Switch**  
+   - **Two Virtual PCs (VPCS)**  
+3. Connect the devices:  
+   - **PC 1 → Switch → Mikrotik Router → Switch → PC 2**  
+
+#### **Step 2: Configure the Mikrotik Router**  
+1. Start the router and access the terminal.  
+2. Assign IP addresses:  
+   ```sh
+   /ip address add address=192.168.1.1/24 interface=ether1
+   /ip address add address=192.168.1.2/24 interface=ether2
+   ```  
+
+#### **Step 3: Configure PC 1 and PC 2 in GNS3**  
+- Open the **VPCS Terminal** and assign static IPs:  
+  - **PC 1:**  
+    ```sh
+    ip 192.168.1.10 255.255.255.0 192.168.1.1
+    ```  
+  - **PC 2:**  
+    ```sh
+    ip 192.168.1.20 255.255.255.0 192.168.1.2
+    ```  
+
+#### **Step 4: Test Connectivity**  
+1. **Ping between PCs:**  
+   - From **PC 1**, run:  
+     ```sh
+     ping 192.168.1.20
+     ```  
+   - From **PC 2**, run:  
+     ```sh
+     ping 192.168.1.10
+     ```  
+2. **Run Traceroute** to check network path:  
+   ```sh
+   traceroute 192.168.1.20
+   ```
 
 ---
 
-### **Step 3: Configure PCs with Static IPs**  
-#### **3.1 Assign IP Addresses to PC1 (Sales - VLAN 10)**  
-- IP Address: `192.168.10.2`  
-- Subnet Mask: `255.255.255.0`  
-- Gateway: `192.168.10.1`  
+## **4. Lab Exercises (Using GNS3)**  
 
-#### **3.2 Assign IP Addresses to PC2 (IT - VLAN 20)**  
-- IP Address: `192.168.20.2`  
-- Subnet Mask: `255.255.255.0`  
-- Gateway: `192.168.20.1`  
+### **Exercise 1: Verify Connectivity**  
+- Use `ping` to test communication between devices.  
+- Use `traceroute` to check the routing path.  
 
----
-
-### **Step 4: Verify VLAN Configuration**  
-#### **4.1 Test VLAN Isolation**  
-- **PC1 (VLAN 10)** should **NOT** be able to ping **PC2 (VLAN 20)**:  
-  ```
-  ping 192.168.20.2
-  ```
-  - If **ping fails**, VLAN isolation is working correctly.  
-
-#### **4.2 Test VLAN IP Assignment**  
-- Run `ipconfig /all` on each PC to verify the correct **VLAN IP**.  
+### **Exercise 2: Assign Dynamic IPs (Bonus Task)**  
+- Instead of static IPs, configure **DHCP on the Mikrotik router**:  
+  ```sh
+  /ip dhcp-server add interface=ether1 address-pool=dhcp_pool
+  /ip pool add name=dhcp_pool ranges=192.168.1.50-192.168.1.100
+  /ip dhcp-server network add address=192.168.1.0/24 gateway=192.168.1.1
+  ```  
+- Configure **PC 1 and PC 2** to obtain IPs dynamically and verify using `ipconfig` or `ifconfig`.  
 
 ---
 
-## **4. Additional Configurations (Optional)**  
-### **Enable VLAN Management on the Switch**  
-- Assign an IP to the switch for management:  
-  ```
-  /ip address add address=192.168.1.100/24 interface=bridge1
-  ```
-
-### **Allow VLAN Communication via Router (Inter-VLAN Routing)**  
-- If VLANs need to communicate, configure **Inter-VLAN Routing** (covered in **Lab 3**).  
-
----
-
-## **5. Conclusion & Next Steps**  
-### **What We Achieved:**  
-✔ Created and configured **VLANs** on a **Mikrotik Router and Switch**.  
-✔ Verified **network segmentation** by isolating traffic.  
+## **5. Summary**  
+✅ **Successfully set up a basic LAN using Mikrotik Router and Switch (GNS3).**  
+✅ **Configured static and dynamic IP addresses.**  
+✅ **Tested connectivity with `ping` and `traceroute`.**  
