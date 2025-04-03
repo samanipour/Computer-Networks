@@ -79,9 +79,9 @@ By the end of this lab, students should be able to:
 
 ### **3.2 Network Topology in GNS3:**  
 ```
-+--------+        +----------+        +--------------+        +--------+
-|  PC 1  |--------|  Switch  |--------| Mikrotik CHR |--------|  PC 2  |
-+--------+        +----------+        +--------------+        +--------+
++--------+        +----------+        +--------------+        +----------+        +--------+
+|  PC 1  |--------|  Switch1 |--------| Mikrotik CHR |--------|  Switch2 |--------|  PC 2  |
++--------+        +----------+        +--------------+        +----------+        +--------+
 ```
   
 ### **3.3 Step-by-Step Instructions in GNS3**  
@@ -93,14 +93,16 @@ By the end of this lab, students should be able to:
    - **Network Switch**  
    - **Two Virtual PCs (VPCS)**  
 3. Connect the devices:  
-   - **PC 1 → Switch → Mikrotik Router → Switch → PC 2**  
+   - **PC 1 → Switch1 → Mikrotik Router → Switch2 → PC 2**  
 
 #### **Step 2: Configure the Mikrotik Router**  
 1. Start the router and access the terminal.  
 2. Assign IP addresses:  
    ```sh
    /ip address add address=192.168.1.1/24 interface=ether1
-   /ip address add address=192.168.1.2/24 interface=ether2
+   ```  
+   ```sh
+   /ip address add address=192.168.2.2/24 interface=ether2
    ```  
 
 #### **Step 3: Configure PC 1 and PC 2 in GNS3**  
@@ -111,14 +113,14 @@ By the end of this lab, students should be able to:
     ```  
   - **PC 2:**  
     ```sh
-    ip 192.168.1.20 255.255.255.0 192.168.1.2
+    ip 192.168.2.20 255.255.255.0 192.168.2.2
     ```  
 
 #### **Step 4: Test Connectivity**  
 1. **Ping between PCs:**  
    - From **PC 1**, run:  
      ```sh
-     ping 192.168.1.20
+     ping 192.168.2.20
      ```  
    - From **PC 2**, run:  
      ```sh
@@ -126,7 +128,7 @@ By the end of this lab, students should be able to:
      ```  
 2. **Run Traceroute** to check network path:  
    ```sh
-   traceroute 192.168.1.20
+   trace 192.168.2.20
    ```
 
 ---
@@ -135,7 +137,7 @@ By the end of this lab, students should be able to:
 
 ### **Exercise 1: Verify Connectivity**  
 - Use `ping` to test communication between devices.  
-- Use `traceroute` to check the routing path.  
+- Use `trace` to check the routing path.  
 
 ### **Exercise 2: Assign Dynamic IPs (Bonus Task)**  
 - Instead of static IPs, configure **DHCP on the Mikrotik router**:  
