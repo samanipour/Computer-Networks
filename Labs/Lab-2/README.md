@@ -1,9 +1,6 @@
-# **Lab 4: Configuring Static Routing on Mikrotik Routers**  
+# **Lab 3: Static Routing **  
 ### **Objective:**  
-- Understand **Static Routing** and why it is used.  
-- Configure **Static Routes** between two different networks using **two Mikrotik Routers**.  
-- Verify connectivity between networks using **ping tests**.  
-
+In this lab, you will configure subnets and static routes in a larger network topology. 
 ---
 
 ## **1. Overview of Static Routing**  
@@ -16,154 +13,188 @@ Static routing is a **manual routing method** where the network administrator de
 - **Efficiency**: Ideal for small networks with few route changes.  
 
 ---
+## **3. Lab Setup and Instructions Using GNS3 Simulator**
+### Create Network
+In GNS3, create a network topology that matches this one:
 
-## **2. Lab Setup & Required Equipment**  
-### **Equipment:**  
-- **Two Mikrotik hAP ac lite Routers**  
-- **Two PCs (one in each network)**  
-- **Ethernet cables**  
-- **GNS3 (optional, for virtual lab)**  
+![img](./assets/network-topology-02.png)
 
-### **Network Topology:**  
+Network Diagram (Note: Subnet labels and dashed borders are for informational use only)
 
-| Network | Subnet | Assigned Device | Router Interface |  
-|---------|--------|----------------|------------------|  
-| Network 1 | 192.168.1.0/24 | PC1 | ether2 on Router 1 |  
-| Network 2 | 192.168.2.0/24 | PC2 | ether2 on Router 2 |  
-| WAN (Router-to-Router Link) | 10.0.0.0/30 | Router 1 (10.0.0.1) | ether1 (connected to Router 2) |  
-| | | Router 2 (10.0.0.2) | ether1 (connected to Router 1) |  
+This network should meet the following specifications:
 
-- **Router 1** will be configured to route traffic to **Network 2** via **Router 2**.  
-- **Router 2** will be configured to route traffic to **Network 1** via **Router 1**.  
+There are two routers with hostnames left and right as viewed on the network diagram.
 
----
+### Subnet 1 - 172.16.10.0/24
 
-## **3. Step-by-Step Configuration**  
-### **Step 1: Configure Basic IP Addressing**  
-#### **1.1 Assign IP Addresses to Router 1**  
-1. Open **WinBox** and connect to **Router 1**.  
-2. Assign an IP address to **ether1 (WAN - Connected to Router 2)**:  
-   ```
-   /ip address add address=10.0.0.1/30 interface=ether1
-   ```
-3. Assign an IP address to **ether2 (LAN - Network 1)**:  
-   ```
-   /ip address add address=192.168.1.1/24 interface=ether2
-   ```
-4. Enable the interface:  
-   ```
-   /interface enable ether1
-   /interface enable ether2
-   ```
+    Contains one Ethernet Switch
+    Contains VPC1 with IP address 172.16.10.1
+    Contains the "Ether1" port of the "left" Router with IP address 172.16.10.254
 
-#### **1.2 Assign IP Addresses to Router 2**  
-1. Open **WinBox** and connect to **Router 2**.  
-2. Assign an IP address to **ether1 (WAN - Connected to Router 1)**:  
-   ```
-   /ip address add address=10.0.0.2/30 interface=ether1
-   ```
-3. Assign an IP address to **ether2 (LAN - Network 2)**:  
-   ```
-   /ip address add address=192.168.2.1/24 interface=ether2
-   ```
-4. Enable the interface:  
-   ```
-   /interface enable ether1
-   /interface enable ether2
-   ```
+### Subnet 2 - 172.16.20.0/24
 
----
+    Contains one Ethernet Switch
+    Contains VPC2 with IP address 172.16.20.1
+    Contains the "Ether2" port of the "left" Router with IP address 172.16.20.254
 
-### **Step 2: Configure Static Routes**  
-#### **2.1 Add a Route on Router 1 to Network 2**  
-- Route traffic destined for **192.168.2.0/24** via **Router 2’s WAN IP (10.0.0.2)**:  
-   ```
-   /ip route add dst-address=192.168.2.0/24 gateway=10.0.0.2
-   ```
+### Subnet 3 - 192.168.0.0/24
 
-#### **2.2 Add a Route on Router 2 to Network 1**  
-- Route traffic destined for **192.168.1.0/24** via **Router 1’s WAN IP (10.0.0.1)**:  
-   ```
-   /ip route add dst-address=192.168.1.0/24 gateway=10.0.0.1
-   ```
+   Contains the "Ether3" port of the "left" Router with IP address 192.168.0.254
+   Contains the "Ether1" port of the "right" Router with IP address 192.168.0.253
 
----
+### Subnet 4 - 10.11.12.0/24
 
-### **Step 3: Configure PCs with Static IPs**  
-#### **3.1 Assign IP Addresses to PC1 (Network 1)**  
-- IP Address: `192.168.1.2`  
-- Subnet Mask: `255.255.255.0`  
-- Gateway: `192.168.1.1`  
+    Contains one Ethernet Switch
+    Contains VPC3 with IP address 10.11.12.1
+    Contains the "Ether2" port of the "right" Router with IP address 10.11.12.254
 
-#### **3.2 Assign IP Addresses to PC2 (Network 2)**  
-- IP Address: `192.168.2.2`  
-- Subnet Mask: `255.255.255.0`  
-- Gateway: `192.168.2.1`  
+### Subnet 5 - 10.11.13.0/24
 
----
+    Contains one Ethernet Switch
+    Contains VPC4 with IP address 10.11.13.1
+    Contains the "Ether3" port of the "right" Router with IP address 10.11.13.254
 
-### **Step 4: Verify Connectivity**  
-#### **4.1 Test Router-to-Router Communication**  
-- From **Router 1**, ping **Router 2’s WAN interface**:  
-   ```
-   /ping 10.0.0.2
-   ```
-  - If **ping is successful**, Router 1 can reach Router 2.  
+Unlike in previous labs, here you are responsible for determining the correct commands to use when configuring your network devices. Refer to the previous labs if you need a refresher on how to configure IP addresses and hostnames for the routers and VPCs.
 
-#### **4.2 Test PC-to-PC Communication**  
-- From **PC1**, ping **PC2 (192.168.2.2)**:  
-   ```
-   ping 192.168.2.2
-   ```
-- From **PC2**, ping **PC1 (192.168.1.2)**:  
-   ```
-   ping 192.168.1.2
-   ```
-  - If **ping works**, static routing is correctly configured.  
+### Tips:
 
----
+    The process goes more smoothly if you configure the routers first, and then the PCs in each subnet.
+    The specific port on a switch does not matter (until we get to a point in the semester where we are configuring switches)
+    The specific port on a router does matter. The router configuration in software needs to be consistent with the way the cables are wired in hardware.
 
-### **Step 5: Troubleshooting (If Ping Fails)**  
-1. **Check Static Routes:**  
-   ```
-   /ip route print
-   ```
-   - Ensure that **both routes are correctly added**.  
+### Configuration Steps:
+1. Configure the hostnames of the "left" and "right" routers to prevent confusion. Use the system identity set name=XXX command. Notice that the command prompt changes to reflect this. You should see [admin@left] > instead of [admin@MikroTik] >
 
-2. **Check Firewall Rules:**  
-   ```
-   /ip firewall filter print
-   ```
-   - If needed, allow traffic between networks:  
-     ```
-     /ip firewall filter add chain=forward action=accept src-address=192.168.1.0/24 dst-address=192.168.2.0/24
-     /ip firewall filter add chain=forward action=accept src-address=192.168.2.0/24 dst-address=192.168.1.0/24
-     ```
+2. Configure IP addresses on all router interfaces that are connected to subnets. Use the ip address add address=a.b.c.d/n interface=XXX command.
 
-3. **Check Interface Status:**  
-   ```
-   /interface print
-   ```
-   - Ensure **ether1 and ether2** are enabled.  
+3. Configure the IP address on each VPC. Use the ip a.b.c.d/n w.x.y.z command. When determining the correct "ip" command to use, ask yourself:
 
----
+   3.1 What is the IP address I want the machine to have?
 
-## **6. Additional Configurations (Optional)**  
-### **Set Up a Default Route (If Connecting to the Internet)**  
-- If you need **internet access**, set a default route:  
-   ```
-   /ip route add dst-address=0.0.0.0/0 gateway=<ISP Gateway>
-   ```
+   3.2 What is the subnet that IP address is in?
 
-### **Enable NAT (If Using Private IPs for Internet)**  
-   ```
-   /ip firewall nat add chain=srcnat out-interface=ether1 action=masquerade
-   ```
+   3.3 What is the IP address of the default gateway? The default gateway is the router that the VPC should send packets to when tryingto communicate outside the subnet. Because routers have multiple IP addresses, you should choose the IP address of the interface thatis within the subnet in question.
 
----
+   3.4 Save the configuration on the VPCs via the save command and exit safe mode on the router.
 
-## **7. Conclusion & Next Steps**  
-### **What We Achieved:**  
-✔ Configured **Static Routing** on two **Mikrotik Routers**.  
-✔ Allowed **inter-network communication** between two different networks.  
-✔ Verified the configuration using **ping tests**.  
+When finished, your left router should be configured like this:
+
+```
+[admin@left] > ip address print               
+Flags: X - disabled, I - invalid, D - dynamic 
+ #   ADDRESS            NETWORK         INTERFACE                              
+ 0   192.168.0.254/24   192.168.0.0     ether3                                 
+ 1   172.16.20.254/24   172.16.20.0     ether2                                 
+ 2   172.16.10.254/24   172.16.10.0     ether1           
+ ```
+
+And your right router should be configured like this:
+
+```
+[admin@right] > ip address print 
+Flags: X - disabled, I - invalid, D - dynamic 
+ #   ADDRESS            NETWORK         INTERFACE                              
+ 0   192.168.0.253/24   192.168.0.0     ether1                                 
+ 1   10.11.12.254/24    10.11.12.0      ether2                                 
+ 2   10.11.13.254/24    10.11.13.0      ether3  
+```
+
+And PC1 (as an example) should be configured like this:
+
+ PC1> show ip
+```
+NAME        : PC1[1]
+IP/MASK     : 172.16.10.1/24
+GATEWAY     : 172.16.10.254
+DNS         : 
+MAC         : 00:50:79:66:68:00
+LPORT       : 20018
+RHOST:PORT  : 127.0.0.1:20019
+MTU:        : 1500
+```
+
+### Test Network
+
+How do we know if the network is working? Let's test it, but in a very systematic way, to ensure all the pieces are functional.
+
+First, check to see that each individual host has its own IP address and subnet configured as desired, and has connectivity. Do this by pinging a neighbor in the same subnet.
+1. From the left router, ping the right router (192.168.0.253). They are on the same subnet. This should work.
+2. From the left router, ping PC1 (172.16.10.1) through the switch. They are on the same subnet. This should work.
+3. From the left router, ping PC2 (172.16.20.1) through the switch. They are on the same subnet. This should work.
+4. From the right router, ping PC3 (10.11.12.1) through the switch. They are on the same subnet. This should work.
+5. From the right router, ping PC4 (10.11.13.1) through the switch. They are on the same subnet. This should work.
+
+Next, let's check if we can send messages **between** subnets.
+1. From PC1, ping PC2 (172.16.20.1) through the switch, router, and switch. This should work.
+2. From PC1, ping the ether1 port of the right router (192.168.0.253). This should NOT work.
+
+Wait, why does this not work?? Everything is wired up! Stupid computers... 
+
+![img](./assets/stupid-computers.png)
+
+Let's think about what happens when the ping request message is sent:
+
+1. PC1 wants to send a ping request message to the "right" router - 192.168.0.253.
+2. PC1 determines that this destination is outside the local subnet
+3. PC1 forwards the message to the "left" router
+4. The "left" router determines that the destination is on a local subnet, subnet 3, and is directly attached
+5. The "left" router forwards the message to the destination. Success!
+
+![img](./assets/network-02-ping-request.png)
+
+While the ping request is successfully received, the ping reply immediately runs into difficulties.
+
+1. The "right" router wants to send a ping reply message to PC1 - 172.16.10.1.
+2. The "right" router determines that the destination is not on any directly attached subnets
+3. The "right" router never transmits the ping reply because it doesn't know where to send it. Failure!
+
+![img](./assets/etwork-02-ping-reply.png)
+
+What is needed is a way to tell each router about subnets that are not directly connected, but instead are further away. This is accomplished in the routing table.
+
+Routing tables tell routers where to send packets whose destination network is not directly attached to the router. Routing table entires can be static or dynamic. Today, we look at static routes, which are entered manually. In a future lab we'll look at protocols that a router can use to create a routing table dynamically. 
+
+### Create Static Routes
+
+On each router, you need to create static entries in the routing table specifying how to reach any subnets that are not directly connected to the router. (It learned about directly attached subnets when you configured the interfaces).
+
+The syntax for this is: ip route add dst-address=a.b.c.d/n gateway=w.x.y.z. That specifies the subnet to be reached (a.b.c.d/n)and the IP of the next-hop router (w.x.y.z) which will move the packet closer to its destination. Note that this is the "next-hop" router - there may be others routers between here and the destination, but only the next hop is being entered in this particular routing table.
+
+For the left router:
+```
+# Examine existing routing table with the entries created by the interfaces
+ip route print  
+
+# Add new entries specifying how to reach distant subnets by way of the "right" router
+# To reach subnet 4, the next hop is the "right" router:
+ip route add dst-address=10.11.12.0/24 gateway=192.168.0.253
+# To reach subnet 5, the next hop is the "right" router:
+ip route add dst-address=10.11.13.0/24 gateway=192.168.0.253
+```
+When finished, the routing table for the left router should look like this:
+```
+[admin@left] > ip route print
+Flags: X - disabled, A - active, D - dynamic, 
+C - connect, S - static, r - rip, b - bgp, o - ospf, m - mme, 
+B - blackhole, U - unreachable, P - prohibit 
+ #      DST-ADDRESS        PREF-SRC        GATEWAY            DISTANCE
+ 0 A S  10.11.12.0/24                      192.168.0.253             1
+ 1 A S  10.11.13.0/24                      192.168.0.253             1
+ 2 ADC  172.16.10.0/24     172.16.10.254   ether1                    0
+ 3 ADC  172.16.20.0/24     172.16.20.254   ether2                    0
+ 4 ADC  192.168.0.0/24     192.168.0.254   ether3                    0
+ ```
+ 
+
+After adding those two static routing table entries for the left router, switch to the right router and add two similar rules for its routing table.
+### Test Network (Again)
+
+    From PC1, ping the ether1 port of the right router (192.168.0.253). This should work.
+    From PC1, ping PC3 (10.11.12.1). This should work.
+    From PC1, ping PC4 (10.11.13.1). This should work.
+
+### Troubleshooting
+
+Having trouble getting your network pings to work when they should? Before asking for assistance, verify that the IP addresses of all the PCs and routers in your network are correctly configured. Example output from a working lab network is shown below.
+
+![img](./assets/p-addr-troubleshooting.png)
