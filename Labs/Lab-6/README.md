@@ -1,174 +1,167 @@
-# **Lab 6: Configuring NAT and Internet Access on Mikrotik Routers**  
+# **Lab 5: Configuring Dynamic Routing with RIP and OSPF on Mikrotik Routers**  
 
 ## **Objective**  
-- Understand **Network Address Translation (NAT)** and its importance.  
-- Configure **Source NAT (Masquerading)** on a **Mikrotik Router** to enable internet access.  
-- Set up **DNS** and verify internet connectivity.  
-- Configure **Firewall rules** to enhance security.  
+- Understand **Dynamic Routing Protocols** and why they are used.  
+- Configure **RIP (Routing Information Protocol)** and **OSPF (Open Shortest Path First)** on **Mikrotik Routers**.  
+- Verify routing and network connectivity using **ping tests** and **route tables**.  
 
 ---
 
-## **1. Overview of NAT (Network Address Translation)**  
+## **1. Overview of Dynamic Routing**  
+### **What is Dynamic Routing?**  
+Dynamic routing **automatically updates and manages routes** between networks. Routers exchange information to learn the best path to other networks without manual intervention.  
 
-### **What is NAT?**  
-Network Address Translation (NAT) allows multiple devices in a private network to access the **internet using a single public IP address**. It acts as a bridge between **private** and **public networks**.  
+### **Why Use Dynamic Routing?**  
+- **Scalability**: Suitable for larger networks.  
+- **Automatic Route Updates**: No need to manually configure routes.  
+- **Redundancy & Load Balancing**: Adapts to network failures and optimizes traffic paths.  
 
-### **Why is NAT Needed?**  
-- **Preserves IPv4 addresses** by allowing multiple devices to share one public IP.  
-- **Hides private network details**, enhancing security.  
-- **Allows internet access** for devices with private IP addresses.  
-
-### **Types of NAT:**  
-| Type | Description | Common Use |  
-|------|-------------|------------|  
-| Source NAT (SNAT) | Translates private IP to public IP | Internet access for private networks |  
-| Destination NAT (DNAT) | Maps public IP to a private IP | Hosting servers inside private networks |  
+### **Types of Dynamic Routing Protocols:**  
+| Protocol | Type | Best for | Convergence Speed |  
+|----------|------|----------|------------------|  
+| RIP (Routing Information Protocol) | Distance Vector | Small networks | Slow |  
+| OSPF (Open Shortest Path First) | Link-State | Large, complex networks | Fast |  
 
 ---
 
 ## **2. Lab Setup & Required Equipment**  
 ### **Equipment:**  
-- **One Mikrotik hAP ac lite Router**  
-- **Three PCs** (simulating LAN users)  
-- **An ISP Simulator or Internet Connection** (using GNS3 Cloud or real internet connection)  
+- **Three Mikrotik hAP ac lite Routers**  
+- **Three PCs (one in each network)**  
 - **Ethernet cables**  
+- **GNS3 (optional, for virtual lab)**  
 
 ### **Network Topology:**  
 
-| Device | Interface | IP Address | Subnet Mask |  
-|--------|----------|------------|-------------|  
-| **Router (Mikrotik hAP ac lite)** | ether1 (WAN) | **DHCP (from ISP)** | Assigned dynamically |  
-|  | ether2 (LAN) | 192.168.1.1 | 255.255.255.0 |  
-| **PC1** | Connected to LAN | 192.168.1.10 | 255.255.255.0 |  
-| **PC2** | Connected to LAN | 192.168.1.20 | 255.255.255.0 |  
-| **PC3** | Connected to LAN | 192.168.1.30 | 255.255.255.0 |  
+| Network | Subnet | Assigned Device | Router Interface |  
+|---------|--------|----------------|------------------|  
+| Network 1 | 192.168.1.0/24 | PC1 | ether2 on Router 1 |  
+| Network 2 | 192.168.2.0/24 | PC2 | ether2 on Router 2 |  
+| Network 3 | 192.168.3.0/24 | PC3 | ether2 on Router 3 |  
+| Router 1 to Router 2 | 10.0.0.0/30 | Router 1 (10.0.0.1) | ether1 (connected to Router 2) |  
+|  |  | Router 2 (10.0.0.2) | ether1 (connected to Router 1) |  
+| Router 2 to Router 3 | 10.0.0.4/30 | Router 2 (10.0.0.5) | ether3 (connected to Router 3) |  
+|  |  | Router 3 (10.0.0.6) | ether1 (connected to Router 2) |  
 
 ---
 
 ## **3. Step-by-Step Configuration**  
 
-### **Step 1: Configure WAN Interface (Ether1) for Internet Access**  
-
-1. **Open WinBox** and connect to the **Mikrotik Router**.  
-2. Go to **IP → DHCP Client**.  
-3. Click **Add (+)** and configure:  
-   - **Interface:** ether1  
-   - **Use Peer DNS:** Checked  
-   - **Use Peer NTP:** Checked  
-   - **Add Default Route:** Checked  
-4. Click **Apply → OK**.  
-
-📌 *This allows the router to obtain an IP address from the ISP dynamically.*  
-
-### **Step 2: Configure LAN Interface (Ether2) with Static IP**  
-
-1. Go to **IP → Addresses**.  
-2. Click **Add (+)** and set:  
-   - **Address:** 192.168.1.1/24  
-   - **Interface:** ether2  
-3. Click **Apply → OK**.  
-
-📌 *This sets up a private network where all LAN devices will be connected.*  
-
----
-
-### **Step 3: Configure DHCP Server for LAN**  
-
-To allow automatic IP allocation to LAN devices:  
-
-1. Go to **IP → DHCP Server**.  
-2. Click **DHCP Setup**.  
-3. Select **ether2** (LAN) and click **Next**.  
-4. Set the following:  
-   - **Network Address:** 192.168.1.0/24  
-   - **Gateway:** 192.168.1.1  
-   - **DNS Server:** 8.8.8.8 (Google DNS)  
-   - **Lease Time:** 10 minutes (or default)  
-5. Click **Next** until the setup is complete.  
-
-📌 *Now, PCs connected to the LAN will automatically receive an IP address.*  
-
----
-
-### **Step 4: Configure Source NAT (Masquerading) for Internet Access**  
-
-1. Go to **IP → Firewall**.  
-2. Open the **NAT** tab.  
-3. Click **Add (+)** and configure:  
-   - **Chain:** srcnat  
-   - **Out Interface:** ether1 (WAN)  
-   - **Action:** masquerade  
-4. Click **Apply → OK**.  
-
-📌 *This allows all LAN devices to use the router's public IP for internet access.*  
-
----
-
-### **Step 5: Configure DNS to Enable Name Resolution**  
-
-1. Go to **IP → DNS**.  
-2. Set **Servers** to:  
-   - **8.8.8.8 (Google DNS)**  
-   - **1.1.1.1 (Cloudflare DNS)**  
-3. Check **Allow Remote Requests**.  
-4. Click **Apply → OK**.  
-
-📌 *This ensures that LAN devices can resolve domain names to IP addresses.*  
-
----
-
-### **Step 6: Testing Internet Connectivity**  
-
-#### **6.1 Test from the Router**  
-1. Open **New Terminal**.  
-2. Type the following command:  
+### **Step 1: Configure Basic IP Addressing on Each Router**  
+#### **1.1 Assign IP Addresses to Router 1**  
+1. Open **WinBox** and connect to **Router 1**.  
+2. Assign an IP address to **ether1 (WAN - Connected to Router 2)**:  
    ```
-   ping 8.8.8.8
-   ```  
-   📌 *A successful response confirms internet access.*  
+   /ip address add address=10.0.0.1/30 interface=ether1
+   ```
+3. Assign an IP address to **ether2 (LAN - Network 1)**:  
+   ```
+   /ip address add address=192.168.1.1/24 interface=ether2
+   ```
+4. Enable the interfaces:  
+   ```
+   /interface enable ether1
+   /interface enable ether2
+   ```
 
-#### **6.2 Test from a LAN PC**  
-1. Open **Command Prompt** on PC1.  
-2. Run:  
+#### **1.2 Assign IP Addresses to Router 2**  
+1. Open **WinBox** and connect to **Router 2**.  
+2. Assign an IP address to **ether1 (Connected to Router 1)**:  
    ```
-   ipconfig /all
-   ```  
-   - Check if the PC has an IP address from **192.168.1.0/24**.  
-3. Run:  
+   /ip address add address=10.0.0.2/30 interface=ether1
    ```
-   ping 8.8.8.8
-   ```  
-   - If successful, the NAT configuration is correct.  
-4. Run:  
+3. Assign an IP address to **ether2 (LAN - Network 2)**:  
    ```
-   ping www.google.com
-   ```  
-   - If successful, **DNS resolution is working**.  
+   /ip address add address=192.168.2.1/24 interface=ether2
+   ```
+4. Assign an IP address to **ether3 (Connected to Router 3)**:  
+   ```
+   /ip address add address=10.0.0.5/30 interface=ether3
+   ```
+
+#### **1.3 Assign IP Addresses to Router 3**  
+1. Open **WinBox** and connect to **Router 3**.  
+2. Assign an IP address to **ether1 (Connected to Router 2)**:  
+   ```
+   /ip address add address=10.0.0.6/30 interface=ether1
+   ```
+3. Assign an IP address to **ether2 (LAN - Network 3)**:  
+   ```
+   /ip address add address=192.168.3.1/24 interface=ether2
+   ```
 
 ---
 
-## **4. Adding Firewall Rules for Security**  
+## **Step 2: Configure RIP (Routing Information Protocol)**  
+### **Enable RIP on All Routers**  
 
-To **enhance security**, restrict external access to the router:  
+#### **2.1 Enable RIP on Router 1**  
+```
+/routing rip interface add interface=ether1
+/routing rip network add network=192.168.1.0/24
+/routing rip network add network=10.0.0.0/30
+```
 
-1. Go to **IP → Firewall**.  
-2. Open the **Filter Rules** tab.  
-3. Click **Add (+)** and set:  
-   - **Chain:** input  
-   - **In Interface:** ether1 (WAN)  
-   - **Protocol:** TCP  
-   - **Dst Port:** 22 (SSH) / 23 (Telnet) / 8291 (WinBox)  
-   - **Action:** drop  
-4. Click **Apply → OK**.  
+#### **2.2 Enable RIP on Router 2**  
+```
+/routing rip interface add interface=ether1
+/routing rip interface add interface=ether3
+/routing rip network add network=192.168.2.0/24
+/routing rip network add network=10.0.0.0/30
+/routing rip network add network=10.0.0.4/30
+```
 
-📌 *This prevents external users from accessing the router's management interfaces.*  
+#### **2.3 Enable RIP on Router 3**  
+```
+/routing rip interface add interface=ether1
+/routing rip network add network=192.168.3.0/24
+/routing rip network add network=10.0.0.4/30
+```
+
+### **Verify RIP Configuration**  
+1. Check the learned RIP routes:  
+   ```
+   /ip route print
+   ```
+2. Ping from **PC1 to PC3 (192.168.3.2)** to test connectivity.
 
 ---
 
-## **5. Conclusion & Next Steps**  
+## **Step 3: Configure OSPF (Open Shortest Path First)**  
+### **Enable OSPF on All Routers**  
+
+#### **3.1 Enable OSPF on Router 1**  
+```
+/routing ospf instance set default router-id=1.1.1.1
+/routing ospf network add network=192.168.1.0/24 area=backbone
+/routing ospf network add network=10.0.0.0/30 area=backbone
+```
+
+#### **3.2 Enable OSPF on Router 2**  
+```
+/routing ospf instance set default router-id=2.2.2.2
+/routing ospf network add network=192.168.2.0/24 area=backbone
+/routing ospf network add network=10.0.0.0/30 area=backbone
+/routing ospf network add network=10.0.0.4/30 area=backbone
+```
+
+#### **3.3 Enable OSPF on Router 3**  
+```
+/routing ospf instance set default router-id=3.3.3.3
+/routing ospf network add network=192.168.3.0/24 area=backbone
+/routing ospf network add network=10.0.0.4/30 area=backbone
+```
+
+### **Verify OSPF Configuration**  
+1. Check OSPF neighbor relationships:  
+   ```
+   /routing ospf neighbor print
+   ```
+2. Test connectivity from **PC1 to PC3**.
+
+---
+
+## **4. Conclusion & Next Steps**  
 ### **What We Achieved:**  
-✅ Configured **NAT (Masquerading)** to enable internet access.  
-✅ Set up a **DHCP Server** for automatic LAN IP allocation.  
-✅ Configured **DNS** for name resolution.  
-✅ Verified **internet connectivity** using **ping tests**.  
-✅ Implemented **firewall rules** for security.  
+✔ Configured **RIP and OSPF** on three Mikrotik routers.  
+✔ Verified routing using **ping tests** and **route tables**.  

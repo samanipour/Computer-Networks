@@ -1,159 +1,174 @@
-# **Lab 7: Configuring Port Forwarding and Accessing Internal Services Remotely**  
+# **Lab 6: Configuring NAT and Internet Access on Mikrotik Routers**  
 
 ## **Objective**  
-- Understand **Port Forwarding (Destination NAT - DNAT)** and its use cases.  
-- Configure **Port Forwarding on Mikrotik Router** to allow external access to internal servers.  
-- Secure the port forwarding setup with **Firewall Rules**.  
-- Test access to an internal service from an external network.  
+- Understand **Network Address Translation (NAT)** and its importance.  
+- Configure **Source NAT (Masquerading)** on a **Mikrotik Router** to enable internet access.  
+- Set up **DNS** and verify internet connectivity.  
+- Configure **Firewall rules** to enhance security.  
 
 ---
 
-## **1. Overview of Port Forwarding (DNAT)**  
+## **1. Overview of NAT (Network Address Translation)**  
 
-### **What is Port Forwarding?**  
-Port forwarding, also called **Destination NAT (DNAT)**, allows external users to access specific services hosted within a **private network** by mapping a **public IP and port** to a **private IP and port**.  
+### **What is NAT?**  
+Network Address Translation (NAT) allows multiple devices in a private network to access the **internet using a single public IP address**. It acts as a bridge between **private** and **public networks**.  
 
-### **Why is Port Forwarding Needed?**  
-- Allows remote access to **web servers, game servers, SSH, RDP, or other hosted services** inside a private network.  
-- Makes a private service **accessible from the internet** while keeping the rest of the network secure.  
-- Useful for **remote administration** of network devices.  
+### **Why is NAT Needed?**  
+- **Preserves IPv4 addresses** by allowing multiple devices to share one public IP.  
+- **Hides private network details**, enhancing security.  
+- **Allows internet access** for devices with private IP addresses.  
+
+### **Types of NAT:**  
+| Type | Description | Common Use |  
+|------|-------------|------------|  
+| Source NAT (SNAT) | Translates private IP to public IP | Internet access for private networks |  
+| Destination NAT (DNAT) | Maps public IP to a private IP | Hosting servers inside private networks |  
 
 ---
 
 ## **2. Lab Setup & Required Equipment**  
 ### **Equipment:**  
 - **One Mikrotik hAP ac lite Router**  
-- **One Internal Web Server (e.g., Apache, Nginx, or HTTP Server on a PC)**  
-- **A Remote PC (External User) to test access from the internet**  
+- **Three PCs** (simulating LAN users)  
+- **An ISP Simulator or Internet Connection** (using GNS3 Cloud or real internet connection)  
 - **Ethernet cables**  
 
 ### **Network Topology:**  
 
-| Device | Interface | IP Address | Subnet Mask | Purpose |  
-|--------|----------|------------|-------------|----------|  
-| **Mikrotik Router** | ether1 (WAN) | **Dynamic Public IP (from ISP)** | Assigned dynamically | Connected to ISP |  
-|  | ether2 (LAN) | 192.168.1.1 | 255.255.255.0 | LAN Gateway |  
-| **Web Server (Internal Host)** | Connected to LAN | 192.168.1.100 | 255.255.255.0 | Hosting Web Service |  
-| **External PC (Internet User)** | Internet | **Public IP** | Assigned dynamically | Simulating a remote user |  
+| Device | Interface | IP Address | Subnet Mask |  
+|--------|----------|------------|-------------|  
+| **Router (Mikrotik hAP ac lite)** | ether1 (WAN) | **DHCP (from ISP)** | Assigned dynamically |  
+|  | ether2 (LAN) | 192.168.1.1 | 255.255.255.0 |  
+| **PC1** | Connected to LAN | 192.168.1.10 | 255.255.255.0 |  
+| **PC2** | Connected to LAN | 192.168.1.20 | 255.255.255.0 |  
+| **PC3** | Connected to LAN | 192.168.1.30 | 255.255.255.0 |  
 
 ---
 
 ## **3. Step-by-Step Configuration**  
 
-### **Step 1: Configure the Internal Web Server**  
+### **Step 1: Configure WAN Interface (Ether1) for Internet Access**  
 
-1. Install **Apache/Nginx** on a LAN computer (e.g., PC with IP **192.168.1.100**).  
-2. Start the web server service.  
-   - If using **Apache** on Windows:  
-     - Download **XAMPP** and start **Apache**.  
-   - If using **Nginx** on Linux:  
-     ```
-     sudo apt install nginx -y
-     sudo systemctl start nginx
-     ```  
-3. Open a web browser and visit `http://192.168.1.100`.  
-4. If the web page loads successfully, the web server is running.  
+1. **Open WinBox** and connect to the **Mikrotik Router**.  
+2. Go to **IP → DHCP Client**.  
+3. Click **Add (+)** and configure:  
+   - **Interface:** ether1  
+   - **Use Peer DNS:** Checked  
+   - **Use Peer NTP:** Checked  
+   - **Add Default Route:** Checked  
+4. Click **Apply → OK**.  
 
----
+📌 *This allows the router to obtain an IP address from the ISP dynamically.*  
 
-### **Step 2: Configure Port Forwarding (DNAT) on Mikrotik Router**  
+### **Step 2: Configure LAN Interface (Ether2) with Static IP**  
 
-To allow external users to access the internal web server:  
+1. Go to **IP → Addresses**.  
+2. Click **Add (+)** and set:  
+   - **Address:** 192.168.1.1/24  
+   - **Interface:** ether2  
+3. Click **Apply → OK**.  
 
-1. Open **WinBox** and connect to the Mikrotik router.  
-2. Go to **IP → Firewall**.  
-3. Open the **NAT** tab.  
-4. Click **Add (+)** and set the following:  
-   - **Chain:** dstnat  
-   - **Protocol:** TCP  
-   - **Dst. Port:** **80** (for HTTP)  
-   - **In. Interface:** ether1 (WAN)  
-   - **Action:** dst-nat  
-   - **To Address:** 192.168.1.100  
-   - **To Ports:** 80  
-5. Click **Apply → OK**.  
-
-📌 *This rule ensures that any request coming to the router's public IP on port 80 is forwarded to the internal web server.*  
+📌 *This sets up a private network where all LAN devices will be connected.*  
 
 ---
 
-### **Step 3: Allow Incoming Connections via Firewall Rules**  
+### **Step 3: Configure DHCP Server for LAN**  
 
-By default, Mikrotik blocks external access. To allow HTTP traffic:  
+To allow automatic IP allocation to LAN devices:  
+
+1. Go to **IP → DHCP Server**.  
+2. Click **DHCP Setup**.  
+3. Select **ether2** (LAN) and click **Next**.  
+4. Set the following:  
+   - **Network Address:** 192.168.1.0/24  
+   - **Gateway:** 192.168.1.1  
+   - **DNS Server:** 8.8.8.8 (Google DNS)  
+   - **Lease Time:** 10 minutes (or default)  
+5. Click **Next** until the setup is complete.  
+
+📌 *Now, PCs connected to the LAN will automatically receive an IP address.*  
+
+---
+
+### **Step 4: Configure Source NAT (Masquerading) for Internet Access**  
+
+1. Go to **IP → Firewall**.  
+2. Open the **NAT** tab.  
+3. Click **Add (+)** and configure:  
+   - **Chain:** srcnat  
+   - **Out Interface:** ether1 (WAN)  
+   - **Action:** masquerade  
+4. Click **Apply → OK**.  
+
+📌 *This allows all LAN devices to use the router's public IP for internet access.*  
+
+---
+
+### **Step 5: Configure DNS to Enable Name Resolution**  
+
+1. Go to **IP → DNS**.  
+2. Set **Servers** to:  
+   - **8.8.8.8 (Google DNS)**  
+   - **1.1.1.1 (Cloudflare DNS)**  
+3. Check **Allow Remote Requests**.  
+4. Click **Apply → OK**.  
+
+📌 *This ensures that LAN devices can resolve domain names to IP addresses.*  
+
+---
+
+### **Step 6: Testing Internet Connectivity**  
+
+#### **6.1 Test from the Router**  
+1. Open **New Terminal**.  
+2. Type the following command:  
+   ```
+   ping 8.8.8.8
+   ```  
+   📌 *A successful response confirms internet access.*  
+
+#### **6.2 Test from a LAN PC**  
+1. Open **Command Prompt** on PC1.  
+2. Run:  
+   ```
+   ipconfig /all
+   ```  
+   - Check if the PC has an IP address from **192.168.1.0/24**.  
+3. Run:  
+   ```
+   ping 8.8.8.8
+   ```  
+   - If successful, the NAT configuration is correct.  
+4. Run:  
+   ```
+   ping www.google.com
+   ```  
+   - If successful, **DNS resolution is working**.  
+
+---
+
+## **4. Adding Firewall Rules for Security**  
+
+To **enhance security**, restrict external access to the router:  
 
 1. Go to **IP → Firewall**.  
 2. Open the **Filter Rules** tab.  
-3. Click **Add (+)** and set the following:  
-   - **Chain:** forward  
+3. Click **Add (+)** and set:  
+   - **Chain:** input  
+   - **In Interface:** ether1 (WAN)  
    - **Protocol:** TCP  
-   - **Dst. Port:** 80  
-   - **In. Interface:** ether1 (WAN)  
-   - **Dst. Address:** 192.168.1.100  
-   - **Action:** accept  
+   - **Dst Port:** 22 (SSH) / 23 (Telnet) / 8291 (WinBox)  
+   - **Action:** drop  
 4. Click **Apply → OK**.  
 
-📌 *Now, external users can access the internal web server.*  
+📌 *This prevents external users from accessing the router's management interfaces.*  
 
 ---
 
-### **Step 4: Test Remote Access from an External Network**  
-
-1. Find the **Public IP Address** of the router:  
-   - Go to **IP → Addresses** and check the IP on **ether1**.  
-   - Or, visit `https://www.whatismyip.com/` from a device inside the network.  
-2. From an **external PC (outside the LAN)**, open a web browser and enter:  
-   ```
-   http://<Public-IP>
-   ```  
-   Example:  
-   ```
-   http://203.0.113.45
-   ```  
-3. If the web server page loads, the port forwarding is working correctly.  
-
-📌 *Now, anyone on the internet can access the internal web server using the router's public IP address.*  
-
----
-
-### **Step 5: Secure the Port Forwarding Setup**  
-
-To prevent unauthorized access, apply security rules:  
-
-#### **5.1 Restrict Access to Specific IPs**  
-If only certain external IPs should access the web server:  
-
-1. Go to **IP → Firewall → Filter Rules**.  
-2. Click **Add (+)** and set:  
-   - **Chain:** forward  
-   - **Protocol:** TCP  
-   - **Dst. Port:** 80  
-   - **In. Interface:** ether1 (WAN)  
-   - **Src. Address:** (Allowed External IP)  
-   - **Action:** accept  
-3. Click **Apply → OK**.  
-
-📌 *This ensures only authorized external IPs can access the server.*  
-
-#### **5.2 Limit Connections per IP**  
-To prevent DDoS attacks:  
-
-1. Go to **IP → Firewall → Filter Rules**.  
-2. Click **Add (+)** and set:  
-   - **Chain:** forward  
-   - **Protocol:** TCP  
-   - **Dst. Port:** 80  
-   - **Connection Limit:** 10  
-   - **Action:** drop  
-3. Click **Apply → OK**.  
-
-📌 *This limits excessive connections from a single IP to prevent abuse.*  
-
----
-
-## **4. Conclusion & Next Steps**  
-
+## **5. Conclusion & Next Steps**  
 ### **What We Achieved:**  
-✅ Configured a **web server inside a private network**.  
-✅ Set up **port forwarding (DNAT)** on Mikrotik to allow external access.  
-✅ Secured the **firewall rules** to prevent unauthorized access.  
-✅ Successfully tested **remote access to the internal server**.  
+✅ Configured **NAT (Masquerading)** to enable internet access.  
+✅ Set up a **DHCP Server** for automatic LAN IP allocation.  
+✅ Configured **DNS** for name resolution.  
+✅ Verified **internet connectivity** using **ping tests**.  
+✅ Implemented **firewall rules** for security.  

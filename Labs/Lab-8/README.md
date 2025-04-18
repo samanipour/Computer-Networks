@@ -1,168 +1,159 @@
-# **Lab 8: Configuring VPN on Mikrotik Router for Secure Remote Access**  
+# **Lab 7: Configuring Port Forwarding and Accessing Internal Services Remotely**  
 
 ## **Objective**  
-- Understand the **importance of VPNs** and how they provide **secure remote access**.  
-- Configure **PPTP VPN Server** on a **Mikrotik Router**.  
-- Configure a **VPN Client** on a remote computer to connect securely.  
-- Implement **firewall rules** for VPN security.  
+- Understand **Port Forwarding (Destination NAT - DNAT)** and its use cases.  
+- Configure **Port Forwarding on Mikrotik Router** to allow external access to internal servers.  
+- Secure the port forwarding setup with **Firewall Rules**.  
+- Test access to an internal service from an external network.  
 
 ---
 
-## **1. Overview of VPN (Virtual Private Network)**  
+## **1. Overview of Port Forwarding (DNAT)**  
 
-### **What is a VPN?**  
-A **VPN (Virtual Private Network)** creates a **secure encrypted connection** over the internet, allowing users to access a private network remotely.  
+### **What is Port Forwarding?**  
+Port forwarding, also called **Destination NAT (DNAT)**, allows external users to access specific services hosted within a **private network** by mapping a **public IP and port** to a **private IP and port**.  
 
-### **Why Use a VPN?**  
-- **Secure Remote Access:** Users can securely connect to a **company network** or **home network** from anywhere.  
-- **Data Encryption:** Encrypts communication, **preventing data interception** by hackers.  
-- **Bypass Restrictions:** Allows users to access **internal services and resources** from external networks.  
-
-### **Types of VPN Supported by Mikrotik:**  
-| VPN Type | Encryption | Use Case |  
-|----------|------------|----------|  
-| **PPTP (Point-to-Point Tunneling Protocol)** | Weak | Simple VPN, easy to set up |  
-| **L2TP/IPSec (Layer 2 Tunneling Protocol with IPSec)** | Strong | Secure VPN for remote workers |  
-| **OpenVPN** | Strong | Secure & flexible |  
-| **WireGuard** | Very Strong | Fast & modern VPN solution |  
-
-📌 *In this lab, we will configure **PPTP VPN** as it is easy to set up and widely supported.*  
+### **Why is Port Forwarding Needed?**  
+- Allows remote access to **web servers, game servers, SSH, RDP, or other hosted services** inside a private network.  
+- Makes a private service **accessible from the internet** while keeping the rest of the network secure.  
+- Useful for **remote administration** of network devices.  
 
 ---
 
 ## **2. Lab Setup & Required Equipment**  
 ### **Equipment:**  
-- **One Mikrotik hAP ac lite Router** (VPN Server)  
-- **One Remote PC (VPN Client)**  
-- **Internet Connection**  
+- **One Mikrotik hAP ac lite Router**  
+- **One Internal Web Server (e.g., Apache, Nginx, or HTTP Server on a PC)**  
+- **A Remote PC (External User) to test access from the internet**  
 - **Ethernet cables**  
 
 ### **Network Topology:**  
 
 | Device | Interface | IP Address | Subnet Mask | Purpose |  
 |--------|----------|------------|-------------|----------|  
-| **Mikrotik Router** | ether1 (WAN) | **Dynamic Public IP (from ISP)** | Assigned dynamically | VPN Server |  
-|  | ether2 (LAN) | 192.168.1.1 | 255.255.255.0 | Local Network Gateway |  
-| **Remote PC (VPN Client)** | Internet | **Public IP** | Assigned dynamically | Connecting to VPN |  
+| **Mikrotik Router** | ether1 (WAN) | **Dynamic Public IP (from ISP)** | Assigned dynamically | Connected to ISP |  
+|  | ether2 (LAN) | 192.168.1.1 | 255.255.255.0 | LAN Gateway |  
+| **Web Server (Internal Host)** | Connected to LAN | 192.168.1.100 | 255.255.255.0 | Hosting Web Service |  
+| **External PC (Internet User)** | Internet | **Public IP** | Assigned dynamically | Simulating a remote user |  
 
 ---
 
 ## **3. Step-by-Step Configuration**  
 
-### **Step 1: Enable PPTP VPN Server on Mikrotik Router**  
+### **Step 1: Configure the Internal Web Server**  
+
+1. Install **Apache/Nginx** on a LAN computer (e.g., PC with IP **192.168.1.100**).  
+2. Start the web server service.  
+   - If using **Apache** on Windows:  
+     - Download **XAMPP** and start **Apache**.  
+   - If using **Nginx** on Linux:  
+     ```
+     sudo apt install nginx -y
+     sudo systemctl start nginx
+     ```  
+3. Open a web browser and visit `http://192.168.1.100`.  
+4. If the web page loads successfully, the web server is running.  
+
+---
+
+### **Step 2: Configure Port Forwarding (DNAT) on Mikrotik Router**  
+
+To allow external users to access the internal web server:  
 
 1. Open **WinBox** and connect to the Mikrotik router.  
-2. Go to **PPP → PPTP Server**.  
-3. Click **Enable**.  
-4. Under **Default Profile**, click on **Profiles** and select **default-encryption**.  
+2. Go to **IP → Firewall**.  
+3. Open the **NAT** tab.  
+4. Click **Add (+)** and set the following:  
+   - **Chain:** dstnat  
+   - **Protocol:** TCP  
+   - **Dst. Port:** **80** (for HTTP)  
+   - **In. Interface:** ether1 (WAN)  
+   - **Action:** dst-nat  
+   - **To Address:** 192.168.1.100  
+   - **To Ports:** 80  
 5. Click **Apply → OK**.  
 
-📌 *The router is now ready to accept PPTP VPN connections.*  
+📌 *This rule ensures that any request coming to the router's public IP on port 80 is forwarded to the internal web server.*  
 
 ---
 
-### **Step 2: Create a VPN User**  
+### **Step 3: Allow Incoming Connections via Firewall Rules**  
 
-1. Go to **PPP → Secrets**.  
-2. Click **Add (+)**.  
-3. Configure the following:  
-   - **Name:** vpnuser  
-   - **Password:** vpnpassword  
-   - **Service:** pptp  
-   - **Local Address:** 192.168.1.1  
-   - **Remote Address:** 192.168.1.200  
+By default, Mikrotik blocks external access. To allow HTTP traffic:  
+
+1. Go to **IP → Firewall**.  
+2. Open the **Filter Rules** tab.  
+3. Click **Add (+)** and set the following:  
+   - **Chain:** forward  
+   - **Protocol:** TCP  
+   - **Dst. Port:** 80  
+   - **In. Interface:** ether1 (WAN)  
+   - **Dst. Address:** 192.168.1.100  
+   - **Action:** accept  
 4. Click **Apply → OK**.  
 
-📌 *This creates a VPN user who will connect to the Mikrotik VPN server remotely.*  
+📌 *Now, external users can access the internal web server.*  
 
 ---
 
-### **Step 3: Configure Firewall Rules for VPN**  
+### **Step 4: Test Remote Access from an External Network**  
 
-To **allow VPN traffic** and **enhance security**:  
+1. Find the **Public IP Address** of the router:  
+   - Go to **IP → Addresses** and check the IP on **ether1**.  
+   - Or, visit `https://www.whatismyip.com/` from a device inside the network.  
+2. From an **external PC (outside the LAN)**, open a web browser and enter:  
+   ```
+   http://<Public-IP>
+   ```  
+   Example:  
+   ```
+   http://203.0.113.45
+   ```  
+3. If the web server page loads, the port forwarding is working correctly.  
+
+📌 *Now, anyone on the internet can access the internal web server using the router's public IP address.*  
+
+---
+
+### **Step 5: Secure the Port Forwarding Setup**  
+
+To prevent unauthorized access, apply security rules:  
+
+#### **5.1 Restrict Access to Specific IPs**  
+If only certain external IPs should access the web server:  
 
 1. Go to **IP → Firewall → Filter Rules**.  
 2. Click **Add (+)** and set:  
-   - **Chain:** input  
+   - **Chain:** forward  
    - **Protocol:** TCP  
-   - **Dst. Port:** 1723 (PPTP)  
+   - **Dst. Port:** 80  
+   - **In. Interface:** ether1 (WAN)  
+   - **Src. Address:** (Allowed External IP)  
    - **Action:** accept  
 3. Click **Apply → OK**.  
 
-📌 *This allows incoming VPN connection requests.*  
+📌 *This ensures only authorized external IPs can access the server.*  
 
-4. Click **Add (+)** and set:  
-   - **Chain:** input  
-   - **Protocol:** GRE  
-   - **Action:** accept  
-5. Click **Apply → OK**.  
+#### **5.2 Limit Connections per IP**  
+To prevent DDoS attacks:  
 
-📌 *PPTP requires GRE (Generic Routing Encapsulation) to function.*  
-
-6. Click **Add (+)** and set:  
-   - **Chain:** input  
-   - **Src. Address:** 192.168.1.200  
-   - **Action:** accept  
-7. Click **Apply → OK**.  
-
-📌 *This allows VPN clients to communicate with LAN resources.*  
-
-8. Finally, **drop all other inbound traffic from the internet**:  
-   - **Chain:** input  
-   - **In. Interface:** ether1 (WAN)  
+1. Go to **IP → Firewall → Filter Rules**.  
+2. Click **Add (+)** and set:  
+   - **Chain:** forward  
+   - **Protocol:** TCP  
+   - **Dst. Port:** 80  
+   - **Connection Limit:** 10  
    - **Action:** drop  
-   - Click **Apply → OK**.  
+3. Click **Apply → OK**.  
 
-📌 *This blocks unauthorized access to the router from the internet.*  
-
----
-
-### **Step 4: Configure a VPN Client on Windows**  
-
-On a remote **Windows PC**, configure a PPTP VPN client:  
-
-1. Open **Settings → Network & Internet → VPN**.  
-2. Click **Add a VPN Connection**.  
-3. Set the following:  
-   - **VPN Provider:** Windows (Built-in)  
-   - **Connection Name:** Mikrotik VPN  
-   - **Server Name or Address:** **Public IP of the Mikrotik Router** (e.g., `203.0.113.45`)  
-   - **VPN Type:** PPTP  
-   - **Username:** vpnuser  
-   - **Password:** vpnpassword  
-4. Click **Save**.  
-5. Click **Connect**.  
-
-📌 *If the connection is successful, the remote PC is now securely connected to the Mikrotik VPN server.*  
-
----
-
-### **Step 5: Test VPN Connection**  
-
-1. Open **Command Prompt** on the remote PC.  
-2. Run the following command to check if the VPN is connected:  
-   ```
-   ipconfig /all
-   ```  
-   - The PC should receive an IP address **192.168.1.200** from the VPN.  
-3. Test **pinging the router**:  
-   ```
-   ping 192.168.1.1
-   ```  
-   - A successful response confirms connectivity.  
-4. Test access to **internal services (e.g., a file server or web server)**:  
-   ```
-   http://192.168.1.100
-   ```  
-   - If successful, VPN clients can now access internal network resources.  
+📌 *This limits excessive connections from a single IP to prevent abuse.*  
 
 ---
 
 ## **4. Conclusion & Next Steps**  
 
 ### **What We Achieved:**  
-✅ Configured **PPTP VPN Server** on Mikrotik Router.  
-✅ Created **VPN user accounts**.  
-✅ Configured **Firewall Rules** to secure the VPN.  
-✅ Successfully **connected a remote client** to the VPN.  
-✅ Verified **access to internal network resources** over VPN.  
+✅ Configured a **web server inside a private network**.  
+✅ Set up **port forwarding (DNAT)** on Mikrotik to allow external access.  
+✅ Secured the **firewall rules** to prevent unauthorized access.  
+✅ Successfully tested **remote access to the internal server**.  
