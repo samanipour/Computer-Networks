@@ -1,4 +1,4 @@
-# **Lab 2: Dive into RouterOS **  
+# **Lab 2: Dive into RouterOS**  
 
 ## **Objective:**  
 In this lab, you will configure a simple network using GNS3 on your computer and learn more about RouterOS. 
