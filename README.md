@@ -5,9 +5,9 @@
 ### Labs
 - [Lab 0: Overview of Computer Network Basics](./Labs/Lab-0/README.md)
 - [Lab 1: Creating a Basic LAN (Local Area Network)](./Labs/Lab-1/)
-- [Lab 2: Virtual Local Area Networks(VLANs)](./Labs/Lab-2/README.md)
-- [Lab 3: Inter-VLAN Routing](./Labs/Lab-3/README.md)
-- [Lab 4: Static Routing](/Labs/Lab-4/README.md)
+- [Lab 2: Static Routing](/Labs/Lab-2/README.md)
+- [Lab 3: Virtual Local Area Networks(VLANs)](./Labs/Lab-3/README.md)
+- [Lab 4: Inter-VLAN Routing](./Labs/Lab-4/README.md)
 - [Lab 5: Dynamic Routing](/Labs/Lab-5/README.md)
 - [Lab 6: NAT and Internet Access](/Labs/Lab-6/README.md)
 - [Lab 7: Port Forwarding and Accessing Internal Services Remotely](/Labs/Lab-7/README.md)

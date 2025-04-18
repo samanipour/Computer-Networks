@@ -1,169 +1,128 @@
-# **Lab 4: Configuring Static Routing on Mikrotik Routers**  
+# **Lab 3: Configuring Inter-VLAN Routing (Router-on-a-Stick)**
 ### **Objective:**  
-- Understand **Static Routing** and why it is used.  
-- Configure **Static Routes** between two different networks using **two Mikrotik Routers**.  
-- Verify connectivity between networks using **ping tests**.  
+- Understand **Inter-VLAN Routing** and why it is needed.  
+- Configure **VLANs** on a **Mikrotik Router** using the **Router-on-a-Stick** method.  
+- Enable **communication between VLANs** using **routing**.  
 
 ---
 
-## **1. Overview of Static Routing**  
-### **What is Static Routing?**  
-Static routing is a **manual routing method** where the network administrator defines specific paths for network traffic using **static routes**.  
+## **1. Overview of Inter-VLAN Routing**
+### **What is VLAN?**
+- A **VLAN (Virtual Local Area Network)** is used to **logically segment** a network into separate groups to improve security and performance.
+- Devices in different **VLANs cannot communicate** unless routing is enabled.
 
-### **Why Use Static Routing?**  
-- **Predictability**: The network administrator controls the route selection.  
-- **Security**: No automatic updates, reducing the risk of incorrect routes.  
-- **Efficiency**: Ideal for small networks with few route changes.  
+### **Why is Inter-VLAN Routing Needed?**
+- **By default, VLANs are isolated.**  
+- To allow devices in **different VLANs to communicate**, we need a **Layer 3 device (router)** to route traffic between VLANs.
+
+### **What is Router-on-a-Stick?**
+- **Router-on-a-Stick** is a method where a **single physical router interface** is used to route traffic between multiple VLANs using **subinterfaces**.  
+- The **router tags VLAN traffic** and routes it accordingly.
 
 ---
 
-## **2. Lab Setup & Required Equipment**  
-### **Equipment:**  
-- **Two Mikrotik hAP ac lite Routers**  
-- **Two PCs (one in each network)**  
-- **Ethernet cables**  
-- **GNS3 (optional, for virtual lab)**  
+## **2. Lab Setup & Required Equipment**
+### **Equipment:**
+- **Mikrotik hAP ac lite Router**
+- **Managed Switch** (supports VLANs)
+- **Two PCs (one in VLAN 10, one in VLAN 20)**
+- **Ethernet cables**
+- **GNS3 or physical devices**
 
 ### **Network Topology:**  
-
-| Network | Subnet | Assigned Device | Router Interface |  
-|---------|--------|----------------|------------------|  
-| Network 1 | 192.168.1.0/24 | PC1 | ether2 on Router 1 |  
-| Network 2 | 192.168.2.0/24 | PC2 | ether2 on Router 2 |  
-| WAN (Router-to-Router Link) | 10.0.0.0/30 | Router 1 (10.0.0.1) | ether1 (connected to Router 2) |  
-| | | Router 2 (10.0.0.2) | ether1 (connected to Router 1) |  
-
-- **Router 1** will be configured to route traffic to **Network 2** via **Router 2**.  
-- **Router 2** will be configured to route traffic to **Network 1** via **Router 1**.  
+| VLAN | Network Address | Assigned Device | Router Interface |  
+|------|---------------|----------------|------------------|  
+| VLAN 10 (Sales) | 192.168.10.0/24 | PC1 (Sales) | ether2 (VLAN 10) |  
+| VLAN 20 (IT) | 192.168.20.0/24 | PC2 (IT) | ether3 (VLAN 20) |  
 
 ---
 
-## **3. Step-by-Step Configuration**  
-### **Step 1: Configure Basic IP Addressing**  
-#### **1.1 Assign IP Addresses to Router 1**  
-1. Open **WinBox** and connect to **Router 1**.  
-2. Assign an IP address to **ether1 (WAN - Connected to Router 2)**:  
-   ```
-   /ip address add address=10.0.0.1/30 interface=ether1
-   ```
-3. Assign an IP address to **ether2 (LAN - Network 1)**:  
-   ```
-   /ip address add address=192.168.1.1/24 interface=ether2
-   ```
-4. Enable the interface:  
-   ```
-   /interface enable ether1
-   /interface enable ether2
-   ```
+## **3. Step-by-Step Configuration**
+### **Step 1: Configure VLANs on the Switch**
+#### **1.1 Access Switch Configuration**
+- Open **WinBox** or use **GNS3 CLI** to access the switch.
 
-#### **1.2 Assign IP Addresses to Router 2**  
-1. Open **WinBox** and connect to **Router 2**.  
-2. Assign an IP address to **ether1 (WAN - Connected to Router 1)**:  
-   ```
-   /ip address add address=10.0.0.2/30 interface=ether1
-   ```
-3. Assign an IP address to **ether2 (LAN - Network 2)**:  
-   ```
-   /ip address add address=192.168.2.1/24 interface=ether2
-   ```
-4. Enable the interface:  
-   ```
-   /interface enable ether1
-   /interface enable ether2
-   ```
+#### **1.2 Create VLANs**
+- Go to **Bridge → VLANs** and add:
+  - **VLAN 10 (Sales)**
+  - **VLAN 20 (IT)**
 
----
+#### **1.3 Assign VLANs to Ports**
+- Assign **ether2** to **VLAN 10**.
+- Assign **ether3** to **VLAN 20**.
+- Set **ether1** as **trunk** (carries multiple VLANs).
 
-### **Step 2: Configure Static Routes**  
-#### **2.1 Add a Route on Router 1 to Network 2**  
-- Route traffic destined for **192.168.2.0/24** via **Router 2’s WAN IP (10.0.0.2)**:  
-   ```
-   /ip route add dst-address=192.168.2.0/24 gateway=10.0.0.2
-   ```
+### **Step 2: Configure VLAN Interfaces on Mikrotik Router**
+#### **2.1 Open WinBox and Access the Router**
+1. Open **WinBox** and connect to the **Mikrotik Router**.  
+2. Navigate to **Interfaces**.  
 
-#### **2.2 Add a Route on Router 2 to Network 1**  
-- Route traffic destined for **192.168.1.0/24** via **Router 1’s WAN IP (10.0.0.1)**:  
-   ```
-   /ip route add dst-address=192.168.1.0/24 gateway=10.0.0.1
-   ```
+#### **2.2 Create VLAN Subinterfaces**
+- Add **VLAN 10** and **VLAN 20** to the router’s trunk interface (ether1):
 
----
+```
+/interface vlan add name=VLAN10 vlan-id=10 interface=ether1
+/interface vlan add name=VLAN20 vlan-id=20 interface=ether1
+```
 
-### **Step 3: Configure PCs with Static IPs**  
-#### **3.1 Assign IP Addresses to PC1 (Network 1)**  
-- IP Address: `192.168.1.2`  
-- Subnet Mask: `255.255.255.0`  
-- Gateway: `192.168.1.1`  
+#### **2.3 Assign IP Addresses to VLAN Interfaces**
+- Assign an IP address for each VLAN:
 
-#### **3.2 Assign IP Addresses to PC2 (Network 2)**  
-- IP Address: `192.168.2.2`  
-- Subnet Mask: `255.255.255.0`  
-- Gateway: `192.168.2.1`  
+```
+/ip address add address=192.168.10.1/24 interface=VLAN10
+/ip address add address=192.168.20.1/24 interface=VLAN20
+```
 
----
+### **Step 3: Configure PCs with Static IPs**
+#### **3.1 Assign IP Addresses to PC1 (Sales - VLAN 10)**
+- IP Address: `192.168.10.2`
+- Subnet Mask: `255.255.255.0`
+- Gateway: `192.168.10.1`
 
-### **Step 4: Verify Connectivity**  
-#### **4.1 Test Router-to-Router Communication**  
-- From **Router 1**, ping **Router 2’s WAN interface**:  
-   ```
-   /ping 10.0.0.2
-   ```
-  - If **ping is successful**, Router 1 can reach Router 2.  
+#### **3.2 Assign IP Addresses to PC2 (IT - VLAN 20)**
+- IP Address: `192.168.20.2`
+- Subnet Mask: `255.255.255.0`
+- Gateway: `192.168.20.1`
 
-#### **4.2 Test PC-to-PC Communication**  
-- From **PC1**, ping **PC2 (192.168.2.2)**:  
-   ```
-   ping 192.168.2.2
-   ```
-- From **PC2**, ping **PC1 (192.168.1.2)**:  
-   ```
-   ping 192.168.1.2
-   ```
-  - If **ping works**, static routing is correctly configured.  
+### **Step 4: Enable Routing Between VLANs**
+- By default, Mikrotik **routes traffic between directly connected networks**.  
+- To **test routing**, ping between PCs.
+
+```
+ping 192.168.20.2  (from PC1)
+ping 192.168.10.2  (from PC2)
+```
+
+### **Step 5: Verify Connectivity**
+- If **ping works**, routing is correctly configured.  
+- If **ping fails**, troubleshoot using:
+  ```
+  /ip route print
+  ```
+  ```
+  /interface vlan print
+  ```
 
 ---
 
-### **Step 5: Troubleshooting (If Ping Fails)**  
-1. **Check Static Routes:**  
-   ```
-   /ip route print
-   ```
-   - Ensure that **both routes are correctly added**.  
+## **4. Additional Configurations (Optional)**
+### **Enable Firewall to Restrict Access Between VLANs**
+- Block **PC1 from accessing PC2**:
 
-2. **Check Firewall Rules:**  
-   ```
-   /ip firewall filter print
-   ```
-   - If needed, allow traffic between networks:  
-     ```
-     /ip firewall filter add chain=forward action=accept src-address=192.168.1.0/24 dst-address=192.168.2.0/24
-     /ip firewall filter add chain=forward action=accept src-address=192.168.2.0/24 dst-address=192.168.1.0/24
-     ```
+```
+/ip firewall filter add chain=forward src-address=192.168.10.2 dst-address=192.168.20.2 action=drop
+```
 
-3. **Check Interface Status:**  
-   ```
-   /interface print
-   ```
-   - Ensure **ether1 and ether2** are enabled.  
+- Allow only **specific services** (e.g., HTTP, SSH) between VLANs:
+
+```
+/ip firewall filter add chain=forward src-address=192.168.10.0/24 dst-address=192.168.20.0/24 protocol=tcp dst-port=80 action=accept
+```
 
 ---
 
-## **6. Additional Configurations (Optional)**  
-### **Set Up a Default Route (If Connecting to the Internet)**  
-- If you need **internet access**, set a default route:  
-   ```
-   /ip route add dst-address=0.0.0.0/0 gateway=<ISP Gateway>
-   ```
-
-### **Enable NAT (If Using Private IPs for Internet)**  
-   ```
-   /ip firewall nat add chain=srcnat out-interface=ether1 action=masquerade
-   ```
-
----
-
-## **7. Conclusion & Next Steps**  
-### **What We Achieved:**  
-✔ Configured **Static Routing** on two **Mikrotik Routers**.  
-✔ Allowed **inter-network communication** between two different networks.  
-✔ Verified the configuration using **ping tests**.  
+## **5. Conclusion & Next Steps**
+### **What We Achieved:**
+✔ Configured **VLANs** on a **Mikrotik router**.  
+✔ Used **Router-on-a-Stick** to enable **Inter-VLAN Routing**.  
+✔ Verified communication between VLANs.  
