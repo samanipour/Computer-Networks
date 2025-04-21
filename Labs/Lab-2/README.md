@@ -46,20 +46,30 @@ This network should meet the following specifications:
 3. Select N when prompted to view the license file.
 4. Enter "Safe Mode" via CTRL-X, as a good habit while experimenting with configuration
 5. Configure two interfaces (corresponding to the two wires plugged in)
+
     5.1 ip address add address=172.16.10.254/24 interface=ether1
+
     5.2 ip address add address=172.16.20.254/24 interface=ether2
+
 6. Print the configuration to confirm: ip address print
 7. Give your router a hostname to identify it in larger networks:
+
     7.1 Check the current router name: system identity print
+
     7.2 Set a new router name: system identity set name=WHATEVER-YOU-WANT
+
     7.3 Check the current router name: system identity print
+
 
 ### At the PC1 console:
 
 1. Show the help menu for available command (recall that this is a rudimentary simulated PC): help
+
 2. Configure an IP address: ip 172.16.10.1/24 172.16.10.254
     1. This sets up a subnet of 172.16.10.0/24, assigns the PC the IP address 172.16.10.1, with a default gateway of 172.16.10.254 (which is the router)
+
 3. Show the configuration: show ip
+
 4. Save the configuration to persist after power cycling: save
 
 ### At the PC2 console:
