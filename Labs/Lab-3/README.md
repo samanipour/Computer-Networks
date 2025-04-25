@@ -1,4 +1,4 @@
-# **Lab 3: Static Routing **  
+# **Lab 3: Static Routing**  
 ### **Objective:**  
 In this lab, you will configure subnets and static routes in a larger network topology. 
 ---
