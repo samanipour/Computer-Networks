@@ -7,7 +7,7 @@
 - [Lab 1: Creating a Basic LAN (Local Area Network)](./Labs/Lab-1/)
 - [Lab 2: Dive into RouterOS](/Labs/Lab-2/README.md)
 - [Lab 3: Static Routing](/Labs/Lab-3/README.md)
-- [Lab 4: Virtual Local Area Networks(VLANs)](./Labs/Lab-4/README.md)
+- [Lab 4: Dynamic Routing)](./Labs/Lab-4/README.md)
 - [Lab 5: Inter-VLAN Routing](./Labs/Lab-5/README.md)
 - [Lab 6: Dynamic Routing](/Labs/Lab-6/README.md)
 - [Lab 7: NAT and Internet Access](/Labs/Lab-7/README.md)
