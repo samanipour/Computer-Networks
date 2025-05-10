@@ -154,10 +154,6 @@ In RIP, routing updates are exchanged between neighbors periodically using a RIP
 
 A router may update its routing table and the distance to a subnet upon receiving an RIP advertisement from a neighboring router. This happens if the current estimate of the shortest path distance from that router to a given subnet is larger than the distance through the neighboring router that has advertised its own shortest path. In other words, the router has now located a shorter path! When this happens, RIP modifies the local routing table and then propagates this information by sending advertisements to its neighboring routers (the ones that are still reachable). A router can also request information about its neighbor’s cost to a given destination using RIP’s request message. Routers send RIP request and response messages to each other over UDP using port number 520.
 
-In MikroTik RouterOS version 7, the configuration of the Routing Information Protocol (RIP) has been updated to utilize instances and interface templates, replacing the older method of directly adding networks. Additionally, route redistribution and timer settings are now managed through the RIP instance configuration.
-
-Below is the revised configuration process for enabling RIP on RouterOS v7:
-
 ---
 
 ## **Step 3: Configure Dynamic Routing with RIP**
@@ -170,7 +166,7 @@ Below is the revised configuration process for enabling RIP on RouterOS v7:
 
    ```bash
    /routing rip instance
-   add name=default redistribute=connected,static update-interval=15s timeout=30s garbage-timer=30s
+   add name=default redistribute=connected,static update-interval=15s
    ```
 
 
@@ -200,12 +196,6 @@ Below is the revised configuration process for enabling RIP on RouterOS v7:
 
      ```bash
      /routing rip interface-template print
-     ```
-
-   * **View RIP Routes:**
-
-     ```bash
-     /routing rip route print
      ```
 
 ### **3.2 Configure RIP on Routers 2, 3, and 4**
