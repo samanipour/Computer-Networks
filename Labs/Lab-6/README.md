@@ -93,71 +93,123 @@ Dynamic routing **automatically updates and manages routes** between networks. R
 ---
 
 ## **Step 2: Configure RIP (Routing Information Protocol)**  
-### **Enable RIP on All Routers**  
 
-#### **2.1 Enable RIP on Router 1**  
-```
-/routing rip interface add interface=ether1
-/routing rip network add network=192.168.1.0/24
-/routing rip network add network=10.0.0.0/30
-```
+### **2.1 Create a RIP Instance**
 
-#### **2.2 Enable RIP on Router 2**  
-```
-/routing rip interface add interface=ether1
-/routing rip interface add interface=ether3
-/routing rip network add network=192.168.2.0/24
-/routing rip network add network=10.0.0.0/30
-/routing rip network add network=10.0.0.4/30
+Begin by creating a RIP instance on each router. This instance will define the types of routes to redistribute and other RIP-specific settings.
+
+```bash
+/routing rip instance
+add name=default redistribute=connected,static originate-default=never
 ```
 
-#### **2.3 Enable RIP on Router 3**  
-```
-/routing rip interface add interface=ether1
-/routing rip network add network=192.168.3.0/24
-/routing rip network add network=10.0.0.4/30
+* `name=default` assigns a name to the RIP instance.
+* `redistribute=connected,static` specifies that connected and static routes will be advertised.
+* `originate-default=never` ensures that the default route is not advertised unless explicitly configured.
+
+### **2.2 Configure Interface Templates**
+
+Next, define interface templates to associate interfaces with the RIP instance. This replaces the previous method of adding networks directly.
+
+#### **Router 1**
+
+```bash
+/routing rip interface-template
+add interfaces=ether1 instance=default
+add interfaces=ether2 instance=default
 ```
 
-### **Verify RIP Configuration**  
-1. Check the learned RIP routes:  
+#### **Router 2**
+
+```bash
+/routing rip interface-template
+add interfaces=ether1 instance=default
+add interfaces=ether3 instance=default
+add interfaces=ether4 instance=default
+```
+
+#### **Router 3**
+
+```bash
+/routing rip interface-template
+add interfaces=ether1 instance=default
+add interfaces=ether2 instance=default
+```
+
+*Note:* Replace `etherX` with the actual interface names corresponding to your network topology.
+
+### **2.3 Verify RIP Configuration**
+
+1. **Check Learned RIP Routes:**
+
+   ```bash
+   /ip route print where protocol=rip
    ```
-   /ip route print
-   ```
-2. Ping from **PC1 to PC3 (192.168.3.2)** to test connectivity.
+
+This command displays routes learned via RIP.
+
+2. **Test Connectivity:**
+
+   From **PC1**, attempt to ping **PC3** (e.g., `ping 192.168.3.2`) to verify end-to-end connectivity through the RIP-configured routers.
 
 ---
 
-## **Step 3: Configure OSPF (Open Shortest Path First)**  
-### **Enable OSPF on All Routers**  
+## **Step 3: Configure OSPF (Open Shortest Path First)**
 
-#### **3.1 Enable OSPF on Router 1**  
-```
-/routing ospf instance set default router-id=1.1.1.1
-/routing ospf network add network=192.168.1.0/24 area=backbone
-/routing ospf network add network=10.0.0.0/30 area=backbone
-```
+### **3.1 Enable OSPF on Router 1**
 
-#### **3.2 Enable OSPF on Router 2**  
-```
-/routing ospf instance set default router-id=2.2.2.2
-/routing ospf network add network=192.168.2.0/24 area=backbone
-/routing ospf network add network=10.0.0.0/30 area=backbone
-/routing ospf network add network=10.0.0.4/30 area=backbone
-```
+````bash
+/routing ospf instance
+set default router-id=1.1.1.1:contentReference[oaicite:9]{index=9}
 
-#### **3.3 Enable OSPF on Router 3**  
-```
-/routing ospf instance set default router-id=3.3.3.3
-/routing ospf network add network=192.168.3.0/24 area=backbone
-/routing ospf network add network=10.0.0.4/30 area=backbone
-```
+```bash
+/routing ospf interface-template
+add interfaces=ether1 area=backbone
+add interfaces=ether2 area=backbone:contentReference[oaicite:12]{index=12}
+````
 
-### **Verify OSPF Configuration**  
-1. Check OSPF neighbor relationships:  
-   ```
+### **3.2 Enable OSPF on Router 2**
+
+````bash
+/routing ospf instance
+set default router-id=2.2.2.2:contentReference[oaicite:15]{index=15}
+
+```bash
+/routing ospf interface-template
+add interfaces=ether1 area=backbone
+add interfaces=ether3 area=backbone
+add interfaces=ether4 area=backbone:contentReference[oaicite:18]{index=18}
+````
+
+### **3.3 Enable OSPF on Router 3**
+
+````bash
+/routing ospf instance
+set default router-id=3.3.3.3:contentReference[oaicite:21]{index=21}
+
+```bash
+/routing ospf interface-template
+add interfaces=ether1 area=backbone
+add interfaces=ether2 area=backbone:contentReference[oaicite:24]{index=24}
+````
+
+*Note:* Replace `etherX` with the actual interface names corresponding to your network topology.
+
+---
+
+### **Verify OSPF Configuration**
+
+1. **Check OSPF Neighbor Relationships:**
+
+   ```bash
    /routing ospf neighbor print
    ```
-2. Test connectivity from **PC1 to PC3**.
+
+   This command displays the current OSPF neighbors and their states.
+
+2. **Test Connectivity:**
+
+   From **PC1**, attempt to ping **PC3** (e.g., `ping 192.168.3.2`) to verify end-to-end connectivity through the OSPF-configured routers.
 
 ---
 
