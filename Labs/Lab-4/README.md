@@ -154,63 +154,98 @@ In RIP, routing updates are exchanged between neighbors periodically using a RIP
 
 A router may update its routing table and the distance to a subnet upon receiving an RIP advertisement from a neighboring router. This happens if the current estimate of the shortest path distance from that router to a given subnet is larger than the distance through the neighboring router that has advertised its own shortest path. In other words, the router has now located a shorter path! When this happens, RIP modifies the local routing table and then propagates this information by sending advertisements to its neighboring routers (the ones that are still reachable). A router can also request information about its neighbor’s cost to a given destination using RIP’s request message. Routers send RIP request and response messages to each other over UDP using port number 520.
 
-## Create Dynamic Routes
+In MikroTik RouterOS version 7, the configuration of the Routing Information Protocol (RIP) has been updated to utilize instances and interface templates, replacing the older method of directly adding networks. Additionally, route redistribution and timer settings are now managed through the RIP instance configuration.
 
-RIP should be enabled on all routers within the Lab 4 network. To enable RIP on router1, follow this process:
+Below is the revised configuration process for enabling RIP on RouterOS v7:
 
-```bash
-# Tell RIP to advertise the routers to connected subnets (and neighboring routers)
-routing rip set redistribute-connected=yes
+---
 
-# Tell RIP to run more frequently
-# (Our network is tiny, so the overhead of frequent updates is minimal)
-routing rip set update-timer=15s
-routing rip set timeout-timer=30s
-routing rip set garbage-timer=30s
+## **Step 3: Configure Dynamic Routing with RIP**
 
-# Run RIP on all interfaces
-# (Note: we're being lazy here.  The interfaces going to the PCs do NOT need RIP run on them. Only the routers need it)
-routing rip interface add interface=all send=v2 receive=v2
+### **3.1 Configure RIP on Router1**
 
-# Tell RIP about subnets directly connected to your router
-routing rip network add network=10.20.0.0/22
-routing rip network add network=192.168.0.0/24
-routing rip network add network=192.168.1.0/24
-routing rip network add network=192.168.5.0/24
+1. **Create a RIP Instance and Set Timers**
 
-# Confirm you entered the correct networks
-routing rip network print
+   Begin by creating a RIP instance and configuring the desired timers:
 
-# View routes that RIP has discovered
-routing rip route print
-```
+   ```bash
+   /routing rip instance
+   add name=default redistribute=connected,static update-interval=15s timeout=30s garbage-timer=30s
+   ```
 
-```bash
-Follow this process and enable RIP on routers 2, 3, and 4
-```
 
-After RIP is enabled on routers 2-4, examine the RIP routes on router1. There should be one to every subnet on the network:
 
-```bash
-[admin@router1] > routing rip route print 
-Flags: C - connect, S - static, R - rip, O - ospf, B - bgp 
- #   DST-ADDRESS        GATEWAY         FROM                METRIC
- 0 R 10.20.0.0/22                                                1
- 1 R 10.30.0.0/22                       192.168.1.2              2
- 2 R 10.40.0.0/22                       192.168.0.2              2
- 3 R 10.50.0.0/22                       192.168.5.2              2
- 4 R 192.168.0.0/24                                              1
- 5 R 192.168.1.0/24                                              1
- 6 R 192.168.2.0/24                     192.168.1.2              2
- 7 R 192.168.3.0/24                     192.168.0.2              2
- 8 R 192.168.4.0/24                     192.168.1.2              2
- 9 R 192.168.5.0/24                                              1
- ```
+* `redistribute=connected,static` ensures that connected and static routes are advertised.
+* `update-interval=15s` sets the frequency of RIP updates.
+* `timeout=30s` specifies the time after which a route is considered invalid if no updates are received.
+* `garbage-timer=30s` defines the time a route remains in the routing table after being marked invalid.
 
-    When RIP is enabled on routers 2-4, PC1 should be able to ping PC2, PC3, and PC4.
+2. **Configure Interface Templates**
 
-    Document your GNS3 topology and these successful pings with screenshot(s).
-    Document the output of routing rip route print on Router3 with a screenshot.
+   Associate the interfaces with the RIP instance using interface templates:
+
+   ```bash
+   /routing rip interface-template
+   add interfaces=ether1 instance=default
+   add interfaces=ether2 instance=default
+   add interfaces=ether3 instance=default
+   add interfaces=ether4 instance=default
+   ```
+
+*Note:* Replace `etherX` with the actual interface names corresponding to your network topology.
+
+3. **Verify RIP Configuration**
+
+   * **Check Interface Templates:**
+
+     ```bash
+     /routing rip interface-template print
+     ```
+
+   * **View RIP Routes:**
+
+     ```bash
+     /routing rip route print
+     ```
+
+### **3.2 Configure RIP on Routers 2, 3, and 4**
+
+Repeat the above steps on Routers 2, 3, and 4, adjusting the `router-id` and interfaces as appropriate for each router.
+
+---
+
+## **Step 4: Verify Network Connectivity**
+
+After configuring RIP on all routers:
+
+1. **Check RIP Routes on Router1:**
+
+   ```bash
+   /routing rip route print
+   ```
+
+You should see routes to all subnets in the network, each with appropriate metrics and gateways.
+
+2. **Test Connectivity Between PCs:**
+
+   From **PC1**, attempt to ping **PC2**, **PC3**, and **PC4** to verify end-to-end connectivity through the RIP-configured routers.
+
+3. **Document Network Topology and Routing Tables:**
+
+   * Capture screenshots of your GNS3 topology.
+   * Document successful pings between PCs.
+   * On **Router3**, execute:
+
+     ```bash
+     /routing rip route print
+     ```
+
+     Capture a screenshot of the output for documentation purposes.
+
+
+
+Document your GNS3 topology and these successful pings with screenshot(s).
+Document the output of routing rip route print on Router3 with a screenshot.
 
 ## Webterm (Traceroute)
 
