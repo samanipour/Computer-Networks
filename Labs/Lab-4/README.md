@@ -166,13 +166,13 @@ A router may update its routing table and the distance to a subnet upon receivin
 
    ```bash
    /routing rip instance
-   add name=default redistribute=connected,static update-interval=15s
+   add name=default redistribute=connected,static update-interval=15
    ```
 
 
 
 * `redistribute=connected,static` ensures that connected and static routes are advertised.
-* `update-interval=15s` sets the frequency of RIP updates.
+* `update-interval=15` sets the frequency of RIP updates.
 * `timeout=30s` specifies the time after which a route is considered invalid if no updates are received.
 * `garbage-timer=30s` defines the time a route remains in the routing table after being marked invalid.
 
