@@ -211,7 +211,7 @@ After configuring RIP on all routers:
 1. **Check RIP Routes on Router1:**
 
    ```bash
-   /routing rip route print
+   /ip route print
    ```
 
 You should see routes to all subnets in the network, each with appropriate metrics and gateways.
