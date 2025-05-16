@@ -22,7 +22,7 @@ Your network topology should match this design:
    1. Configure the **hostnames** of the routers in the router itself to prevent confusion (via the CLI).
    1. Configure **IP addresses** on all router interfaces that are connected to subnets.
    1. Disable the DHCP Client on each router. (Unless you ran Wireshark on a link, you wouldn't have previously noticed that a new MikroTik router defaults to running a DHCP client on Ether1, trying to auto-configure that network port so a new administrator can access the router over the network. It's not helpful for us here.) `ip dhcp-client print` followed by `ip dhcp-client remove numbers=0` will eliminate this.
-   1. Configure **dynamic routing (RIP)** between subnets 1, 2, and 3. After configuration, verify with `routing rip route print` that the route table is as you desire.
+   1. Configure **dynamic routing (RIP)** between subnets 1, 2, and 3. After configuration, verify with `/ip route print` that the route table is as you desire.
       1. Don’t be lazy this time and run RIP on “all” interfaces. Only run RIP on the interfaces between Router1 and Router2.
       1. `routing rip interface add interface=etherX send=v2 receive=v2 # For the interface going to other routers`
       1. `routing rip interface add interface=etherY passive=yes # For the interface going to clients`
@@ -97,7 +97,7 @@ Submit the following items to the Lab 6 Canvas assignment:
    - Provide a screenshot showing your GNS3 topology
    - Provide a screenshot showing successful pings from PC1 to PC2 and Webterm
    - Provide a screenshot with the Router1 web console (via VNC on webterm-1) showing DHCP Leases. (Go under WebFig->IP->DHCP Server->Leases)
-   - Provide a screenshot showing the output of `routing rip route print` on Router2
+   - Provide a screenshot showing the output of `/ip route print` on Router2
    - Provide a Wireshark .pcapng file showing the 4 "DORA" (Discovery, Offer, Request, and Acknowledgement) packets from DHCP for one of the VPCS systems. You may need to do a `clear ip` and `ip dhcp` on a VPCS to trigger a DHCP conversation while you are doing packet capture. Filter your Wireshark packet list to only include DHCP (via `bootp.option.type == 53`), mark those packets, and export only the marked packets to a new file for submission. Your submitted file should only contain 4 packets, no more! (and no less)
       - Tip: If you want to capture some packets from within the simulated GNS3 network, how do you do that?
    - Provide a Wireshark .pcapng file showing what a RIPv2 "Response" broadcast looks like on the link between Router1 and Router2. Filter your Wireshark packet list to only include RIP (via rip), mark a few of the endless list of identical broadcasts, and export only the marked packets to a new file for submission.
