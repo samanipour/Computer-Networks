@@ -1,219 +1,123 @@
-# **Lab 5: Configuring Dynamic Routing with RIP and OSPF on Mikrotik Routers**  
+# Virtual Local Area Networks (VLANs)
 
-## **Objective**  
-- Understand **Dynamic Routing Protocols** and why they are used.  
-- Configure **RIP (Routing Information Protocol)** and **OSPF (Open Shortest Path First)** on **Mikrotik Routers**.  
-- Verify routing and network connectivity using **ping tests** and **route tables**.  
+In this lab, you'll configure VLANs on the switches and router to provide for network isolation between sets of hosts on the same physical network. 
 
----
+## Design Network
 
-## **1. Overview of Dynamic Routing**  
-### **What is Dynamic Routing?**  
-Dynamic routing **automatically updates and manages routes** between networks. Routers exchange information to learn the best path to other networks without manual intervention.  
+Your network topology should match this design:
 
-### **Why Use Dynamic Routing?**  
-- **Scalability**: Suitable for larger networks.  
-- **Automatic Route Updates**: No need to manually configure routes.  
-- **Redundancy & Load Balancing**: Adapts to network failures and optimizes traffic paths.  
+![img](./assets/network-07.png)
+  Network Diagram (Note: Subnet labels and dashed borders are for informational use only)
 
-### **Types of Dynamic Routing Protocols:**  
-| Protocol | Type | Best for | Convergence Speed |  
-|----------|------|----------|------------------|  
-| RIP (Routing Information Protocol) | Distance Vector | Small networks | Slow |  
-| OSPF (Open Shortest Path First) | Link-State | Large, complex networks | Fast |  
+### Subnet 1: 10.0.1.0/24, VLAN 10
 
----
+    Webterm-1, connected to Port 0 of Switch1 (access type)
+    PC1, connected to Port 1 of Switch1 (access type)
+    PC3, connected to Port 0 of Switch2 (access type)
 
-## **2. Lab Setup & Required Equipment**  
-### **Equipment:**  
-- **Three Mikrotik hAP ac lite Routers**  
-- **Three PCs (one in each network)**  
-- **Ethernet cables**  
-- **GNS3 (optional, for virtual lab)**  
+### Subnet 2: 10.0.2.0/24, VLAN 20
 
-### **Network Topology:**  
+    Webterm-2, connected to Port 2 of Switch1 (access type)
+    PC2, connected to Port 3 of Switch1 (access type)
+    PC4, connected to Port 1 of Switch2 (access type)
 
-| Network | Subnet | Assigned Device | Router Interface |  
-|---------|--------|----------------|------------------|  
-| Network 1 | 192.168.1.0/24 | PC1 | ether2 on Router 1 |  
-| Network 2 | 192.168.2.0/24 | PC2 | ether2 on Router 2 |  
-| Network 3 | 192.168.3.0/24 | PC3 | ether2 on Router 3 |  
-| Router 1 to Router 2 | 10.0.0.0/30 | Router 1 (10.0.0.1) | ether1 (connected to Router 2) |  
-|  |  | Router 2 (10.0.0.2) | ether1 (connected to Router 1) |  
-| Router 2 to Router 3 | 10.0.0.4/30 | Router 2 (10.0.0.5) | ether3 (connected to Router 3) |  
-|  |  | Router 3 (10.0.0.6) | ether1 (connected to Router 2) |  
+### Subnet 3: 10.0.3.0/24, VLAN 1 (default VLAN)
+     PC5
 
----
+### Additional Requirements
 
-## **3. Step-by-Step Configuration**  
+  - Router1 will provide DHCP services to all 3 subnets
+  - The link between Switch1 and Switch2 will use 802.1q VLAN Tagging and carry traffic for multiple VLANs
+  - The link between Switch1 and Router1 will use 802.1q VLAN Tagging and carry traffic for multiple VLANs
 
-### **Step 1: Configure Basic IP Addressing on Each Router**  
-#### **1.1 Assign IP Addresses to Router 1**  
-1. Open **WinBox** and connect to **Router 1**.  
-2. Assign an IP address to **ether1 (WAN - Connected to Router 2)**:  
-   ```
-   /ip address add address=10.0.0.1/30 interface=ether1
-   ```
-3. Assign an IP address to **ether2 (LAN - Network 1)**:  
-   ```
-   /ip address add address=192.168.1.1/24 interface=ether2
-   ```
-4. Enable the interfaces:  
-   ```
-   /interface enable ether1
-   /interface enable ether2
-   ```
+## VLAN Overview
 
-#### **1.2 Assign IP Addresses to Router 2**  
-1. Open **WinBox** and connect to **Router 2**.  
-2. Assign an IP address to **ether1 (Connected to Router 1)**:  
-   ```
-   /ip address add address=10.0.0.2/30 interface=ether1
-   ```
-3. Assign an IP address to **ether2 (LAN - Network 2)**:  
-   ```
-   /ip address add address=192.168.2.1/24 interface=ether2
-   ```
-4. Assign an IP address to **ether3 (Connected to Router 3)**:  
-   ```
-   /ip address add address=10.0.0.5/30 interface=ether3
-   ```
+VLANs allow traffic for multiple Virtual LANs to be carried over the same physical LAN in an isolated fashion. Or, to phrase it another way, each VLAN is its own independent broadcast domain. Typically, VLANs are configured by the network administrator on data link layer devices such as switches and routers, not hosts such as PCs. (The only exception might be a datacenter server with a specific need to be on multiple VLANs simultaneously). VLAN settings must be configured on a port-by-port basis, and include two key pieces of information:
 
-#### **1.3 Assign IP Addresses to Router 3**  
-1. Open **WinBox** and connect to **Router 3**.  
-2. Assign an IP address to **ether1 (Connected to Router 2)**:  
-   ```
-   /ip address add address=10.0.0.6/30 interface=ether1
-   ```
-3. Assign an IP address to **ether2 (LAN - Network 3)**:  
-   ```
-   /ip address add address=192.168.3.1/24 interface=ether2
-   ```
+1. The VLAN ID Number (0-4095), which is used by data link layer devices to distinguish between VLANs. The default VLAN ID is 1.
+2. The port type
+    1. **Access type:** The port carries traffic for a single VLAN only, and the connected device does not see any VLAN headers at all. This is used for ports connected to hosts.
+    2. **Trunk type:** The port carries traffic for multiple VLANs over a single link. In this case of 802.1q, one level of VLAN tags can be carried, or in the case of q-in-q, a VLAN can be encapsulated inside another VLAN. This is used for ports connected to switches or routers.
 
----
+## VLAN Configuration on GNS3 Switches
 
-## **Step 2: Configure RIP (Routing Information Protocol)**  
+GNS3 has some "quirks" when it comes to configuring VLANs on the built-in switches. It requires the VLAN ID number and VLAN type (access, 802.1q trunking, or q-in-q ) for a port to be set before a link is connected to the port. This is not a normal requirement. In a real switch, you could change the VLAN setting at any time. But, in the simulator, the VLAN should be configured before the network is wired.
 
-### **2.1 Create a RIP Instance**
+Right-click on the switch and choose Configure. Then, in this specific order, you should:
 
-Begin by creating a RIP instance on each router. This instance will define the types of routes to redistribute and other RIP-specific settings.
+  1. Select a specific port
+  1. Change that port setting (VLAN ID, Type)
+  1. "Save" the setting by clicking the "Add" button
+  1. Repeat for all the ports you wish to change
+  1. Choose "OK" to exit the configuration window
 
-```bash
-/routing rip instance
-add name=default redistribute=connected,static originate-default=never
-```
+![img](./assets/switch-vlan-config.png)
 
-* `name=default` assigns a name to the RIP instance.
-* `redistribute=connected,static` specifies that connected and static routes will be advertised.
-* `originate-default=never` ensures that the default route is not advertised unless explicitly configured.
+For ports that are connected to hosts (the VPCS), ensure their VLAN ID is set correctly and leave the port type set to "Access".
 
-### **2.2 Configure Interface Templates**
+For ports that carry traffic for multiple VLANs, leave the VLAN ID set as 1 (default) but change the port type to "dot1q", for the IEEE 802.1q VLAN tagging standard.
 
-Next, define interface templates to associate interfaces with the RIP instance. This replaces the previous method of adding networks directly.
+## VLAN Configuration on Mikrotik Router
 
-#### **Router 1**
+Configuring VLANs on the router is very straightforward. Each VLAN appears as a separate interface to the router and can be used in much the same way as all the physical interfaces (ether1, ether2, etc...).
 
-```bash
-/routing rip interface-template
-add interfaces=ether1 instance=default
-add interfaces=ether2 instance=default
-```
+Add virtual interfaces to the router corresponding to the desired VLAN IDs. By specifying the physical interface, 802.1q trunking will be used:
 
-#### **Router 2**
+interface vlan add name=vlan10 vlan-id=10 interface=ether1 disabled=no
+interface vlan add name=vlan20 vlan-id=20 interface=ether1 disabled=no
 
-```bash
-/routing rip interface-template
-add interfaces=ether1 instance=default
-add interfaces=ether3 instance=default
-add interfaces=ether4 instance=default
-```
+We don't need nested VLANs in this lab, but if you wanted q-in-q nested VLANs, you could accomplish that by simply adding a new VLAN (with ID number) and specifying its interface as another VLAN virtual interface.
 
-#### **Router 3**
+To verify your setup:
 
-```bash
-/routing rip interface-template
-add interfaces=ether1 instance=default
-add interfaces=ether2 instance=default
-```
+  1. Print out the VLAN interfaces: `interface vlan print`
+  1. Print out all the interfaces (physical and virtual): `interface print`
 
-*Note:* Replace `etherX` with the actual interface names corresponding to your network topology.
+**At this point, you can use interfaces "vlan10" and "vlan20" as normal interfaces.** They can be assigned IP addresses, used in routing tables, and wherever else interfaces may be needed. The router will ensure that data sent over those VLAN interfaces is tagged with the correct VLAN ID number.
+## Implementation
 
-### **2.3 Verify RIP Configuration**
+Tips:
 
-1. **Check Learned RIP Routes:**
+  - The process goes more smoothly if you configure the routers first, and then the PCs in each subnet.
+  - The specific port on a switch does matter in this lab, because we are assigning different ports to different VLANs.
+  - The specific port on a router does matter. The router configuration in software needs to be consistent with the way the cables are wired in hardware.
 
-   ```bash
-   /ip route print where protocol=rip
-   ```
+## Configuration Steps:
 
-This command displays routes learned via RIP.
+  1. Configure the **VLAN settings** in Switch1 and Switch2 (this is done first due to GNS3 limitations)
+  1. Configure the **hostname** of the router in GNS3 to prevent confusion (via the GUI).
+  1. Configure the **hostname** of the router in the router itself to prevent confusion (via the CLI).
+  1. Configure **IP addresses** on all router interfaces that are connected to subnets. Remember that some IP addresses should be on the VLAN virtual interfaces!
+  1. Disable the **DHCP Client** on the router that runs automatically for new system setup. `ip dhcp-client print` followed by `ip dhcp-client remove numbers=0` to remove it.
+  1. Configure the **DHCP server** on the router to provide addresses to all 3 subnets. Remember that some DHCP services should be on the VLAN virtual interfaces!
+  1. Enable the **DHCP client** on the VPCs and the Webterms.
+  1. Save the configuration on the VPCs via the `save` command and exit safe mode on the router.
 
-2. **Test Connectivity:**
+## Test Network
 
-   From **PC1**, attempt to ping **PC3** (e.g., `ping 192.168.3.2`) to verify end-to-end connectivity through the RIP-configured routers.
+For testing, first ensure that PC1 can successfully ping all other devices on the network.
 
----
+Simple ping testing, however, is not sufficient to demonstrate that VLANs are correctly configured and that the broadcast domains are isolated between them. To test your VLANs, send out broadcast packets and see where they are received.
 
-## **Step 3: Configure OSPF (Open Shortest Path First)**
+  1. Start packet capture on the following links and keep them all running at the same time. Don't get your Wireshark windows mixed up! (The title bar tells you what link is being shown...)
+      1. Link between PC1 and Switch1 (in VLAN 10)
+      1. Link between PC2 and Switch1 (in VLAN 20)
+      1. Link between PC3 and Switch2 (in VLAN 10)
+      1. Link between PC4 and Switch2 (in VLAN 20)
+  2. On Webterm-1, try pinging an IP address in its subnet (e.g. 10.0.1.1) that is not assigned to any current host. (Tip: Close Firefox first, since it will be trying and failing to connect to the Internet in the background).
+     1. What kind of packet will Webterm-1 try repeatedly to send until you CTRL-C to cancel the ping attempts?
+     1. Where in the network would you expect to see that packet? (i.e. how far does that broadcast domain extend?)
+     1. Can you confirm that in Wireshark?
+  3.  On Webterm-2, try pinging an IP address in its subnet (e.g. 10.0.2.1) that is not assigned to any current host, and repeat the verification process.
 
-### **3.1 Enable OSPF on Router 1**
+## Lab Submission
 
-````bash
-/routing ospf instance
-set default router-id=1.1.1.1:contentReference[oaicite:9]{index=9}
+Submit the following items:
 
-```bash
-/routing ospf interface-template
-add interfaces=ether1 area=backbone
-add interfaces=ether2 area=backbone:contentReference[oaicite:12]{index=12}
-````
-
-### **3.2 Enable OSPF on Router 2**
-
-````bash
-/routing ospf instance
-set default router-id=2.2.2.2:contentReference[oaicite:15]{index=15}
-
-```bash
-/routing ospf interface-template
-add interfaces=ether1 area=backbone
-add interfaces=ether3 area=backbone
-add interfaces=ether4 area=backbone:contentReference[oaicite:18]{index=18}
-````
-
-### **3.3 Enable OSPF on Router 3**
-
-````bash
-/routing ospf instance
-set default router-id=3.3.3.3:contentReference[oaicite:21]{index=21}
-
-```bash
-/routing ospf interface-template
-add interfaces=ether1 area=backbone
-add interfaces=ether2 area=backbone:contentReference[oaicite:24]{index=24}
-````
-
-*Note:* Replace `etherX` with the actual interface names corresponding to your network topology.
-
----
-
-### **Verify OSPF Configuration**
-
-1. **Check OSPF Neighbor Relationships:**
-
-   ```bash
-   /routing ospf neighbor print
-   ```
-
-   This command displays the current OSPF neighbors and their states.
-
-2. **Test Connectivity:**
-
-   From **PC1**, attempt to ping **PC3** (e.g., `ping 192.168.3.2`) to verify end-to-end connectivity through the OSPF-configured routers.
-
----
-
-## **4. Conclusion & Next Steps**  
-### **What We Achieved:**  
-✔ Configured **RIP and OSPF** on three Mikrotik routers.  
-✔ Verified routing using **ping tests** and **route tables**.  
+  - Provide a **screenshot** showing your GNS3 topology and the configuration panel for Switch1 with the VLAN-specific settings present
+  - Provide a **screenshot** showing successful pings from PC1 to Webterm-2 and PC5
+  - Provide a **text answe**r: How can pinging a non-existent IP within a subnet be used to verify VLAN configuration? What kind of packet is sent? Where is such a packet expected to go, and to not go?
+  - Provide a **screenshot** showing ip address print on your router. Some IP addresses should be assigned to VLAN interfaces and others to physical interfaces.
+  - Provide a **screenshot** showing ip route print on your router. Some routes should go out of VLAN interfaces and others go out physical interfaces.
+  - Provide a **screenshot** showing ip dhcp-server print detail on your router. Some DHCP servers should be assigned to VLAN interfaces and others to physical interfaces.
+  - Provide a **Wireshark .pcapng file** from the link between Switch1 and Router1 while Webterm1 is actively pinging Webterm2. Filter your Wireshark packet list so that the only packets shown are for a single ICMP echo request (from Webterm1) and the corresponding ICMP echo reply (from Webterm2) via icmp.ident==XX && icmp.seq==YY. Mark those packets, and export only the marked packets to a new file for submission. Given your knowledge of VLANs and the way a packet will travel between different VLANs, how many packets should be in this capture?
