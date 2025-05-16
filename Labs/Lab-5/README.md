@@ -1,219 +1,103 @@
-# **Lab 5: Configuring Dynamic Routing with RIP and OSPF on Mikrotik Routers**  
+# Dynamic Host Configuration Protocol (DHCP)
+In this lab, you'll configure the Dynamic Host Configuration Protocol (DHCP) on the routers so that hosts can request their own IP addresses automatically.
 
-## **Objective**  
-- Understand **Dynamic Routing Protocols** and why they are used.  
-- Configure **RIP (Routing Information Protocol)** and **OSPF (Open Shortest Path First)** on **Mikrotik Routers**.  
-- Verify routing and network connectivity using **ping tests** and **route tables**.  
+## Design Network
 
----
+Your network topology should match this design:
 
-## **1. Overview of Dynamic Routing**  
-### **What is Dynamic Routing?**  
-Dynamic routing **automatically updates and manages routes** between networks. Routers exchange information to learn the best path to other networks without manual intervention.  
+![img](./assets/network-05.png)
 
-### **Why Use Dynamic Routing?**  
-- **Scalability**: Suitable for larger networks.  
-- **Automatic Route Updates**: No need to manually configure routes.  
-- **Redundancy & Load Balancing**: Adapts to network failures and optimizes traffic paths.  
+   Network Diagram (Note: Subnet labels and dashed borders are for informational use only)
+## Implementation
 
-### **Types of Dynamic Routing Protocols:**  
-| Protocol | Type | Best for | Convergence Speed |  
-|----------|------|----------|------------------|  
-| RIP (Routing Information Protocol) | Distance Vector | Small networks | Slow |  
-| OSPF (Open Shortest Path First) | Link-State | Large, complex networks | Fast |  
+### Tips:
 
----
+- The process goes more smoothly if you configure the routers first, and then the PCs in each subnet.
+- The specific port on a switch does not matter (until we get to a point in the semester where we are configuring switches)
+- The specific port on a router does matter. The router configuration in software needs to be consistent with the way the cables are wired in hardware.
 
-## **2. Lab Setup & Required Equipment**  
-### **Equipment:**  
-- **Three Mikrotik hAP ac lite Routers**  
-- **Three PCs (one in each network)**  
-- **Ethernet cables**  
-- **GNS3 (optional, for virtual lab)**  
+### Configuration Steps:
 
-### **Network Topology:**  
+   1. Configure the **hostnames** of the routers in GNS3 to prevent confusion (via the GUI).
+   1. Configure the **hostnames** of the routers in the router itself to prevent confusion (via the CLI).
+   1. Configure **IP addresses** on all router interfaces that are connected to subnets.
+   1. Disable the DHCP Client on each router. (Unless you ran Wireshark on a link, you wouldn't have previously noticed that a new MikroTik router defaults to running a DHCP client on Ether1, trying to auto-configure that network port so a new administrator can access the router over the network. It's not helpful for us here.) `ip dhcp-client print` followed by `ip dhcp-client remove numbers=0` will eliminate this.
+   1. Configure **dynamic routing (RIP)** between subnets 1, 2, and 3. After configuration, verify with `routing rip route print` that the route table is as you desire.
+      1. Don’t be lazy this time and run RIP on “all” interfaces. Only run RIP on the interfaces between Router1 and Router2.
+      1. `routing rip interface add interface=etherX send=v2 receive=v2 # For the interface going to other routers`
+      1. `routing rip interface add interface=etherY passive=yes # For the interface going to clients`
+   1. Configure the **DHCP server** on both routers to provide addresses to their directly connected subnet.
+      1. Router1 should provide addresses to Subnet1
+      1. Router2 should provide addresses to Subnet2
+   1. Enable the **DHCP client** on the VPCs and the Webterm client.
+   1. Save the configuration on the VPCs via the `save` command and exit safe mode on the router.
 
-| Network | Subnet | Assigned Device | Router Interface |  
-|---------|--------|----------------|------------------|  
-| Network 1 | 192.168.1.0/24 | PC1 | ether2 on Router 1 |  
-| Network 2 | 192.168.2.0/24 | PC2 | ether2 on Router 2 |  
-| Network 3 | 192.168.3.0/24 | PC3 | ether2 on Router 3 |  
-| Router 1 to Router 2 | 10.0.0.0/30 | Router 1 (10.0.0.1) | ether1 (connected to Router 2) |  
-|  |  | Router 2 (10.0.0.2) | ether1 (connected to Router 1) |  
-| Router 2 to Router 3 | 10.0.0.4/30 | Router 2 (10.0.0.5) | ether3 (connected to Router 3) |  
-|  |  | Router 3 (10.0.0.6) | ether1 (connected to Router 2) |  
+## Dynamic Host Configuration Protocol (DHCP)
+### For Routers
 
----
+On the MikroTik routers, a DHCP Server can be easily enabled. The following commands configure Router 1 (as shown above) to provide DHCP services to Subnet 1.
 
-## **3. Step-by-Step Configuration**  
-
-### **Step 1: Configure Basic IP Addressing on Each Router**  
-#### **1.1 Assign IP Addresses to Router 1**  
-1. Open **WinBox** and connect to **Router 1**.  
-2. Assign an IP address to **ether1 (WAN - Connected to Router 2)**:  
-   ```
-   /ip address add address=10.0.0.1/30 interface=ether1
-   ```
-3. Assign an IP address to **ether2 (LAN - Network 1)**:  
-   ```
-   /ip address add address=192.168.1.1/24 interface=ether2
-   ```
-4. Enable the interfaces:  
-   ```
-   /interface enable ether1
-   /interface enable ether2
-   ```
-
-#### **1.2 Assign IP Addresses to Router 2**  
-1. Open **WinBox** and connect to **Router 2**.  
-2. Assign an IP address to **ether1 (Connected to Router 1)**:  
-   ```
-   /ip address add address=10.0.0.2/30 interface=ether1
-   ```
-3. Assign an IP address to **ether2 (LAN - Network 2)**:  
-   ```
-   /ip address add address=192.168.2.1/24 interface=ether2
-   ```
-4. Assign an IP address to **ether3 (Connected to Router 3)**:  
-   ```
-   /ip address add address=10.0.0.5/30 interface=ether3
-   ```
-
-#### **1.3 Assign IP Addresses to Router 3**  
-1. Open **WinBox** and connect to **Router 3**.  
-2. Assign an IP address to **ether1 (Connected to Router 2)**:  
-   ```
-   /ip address add address=10.0.0.6/30 interface=ether1
-   ```
-3. Assign an IP address to **ether2 (LAN - Network 3)**:  
-   ```
-   /ip address add address=192.168.3.1/24 interface=ether2
-   ```
-
----
-
-## **Step 2: Configure RIP (Routing Information Protocol)**  
-
-### **2.1 Create a RIP Instance**
-
-Begin by creating a RIP instance on each router. This instance will define the types of routes to redistribute and other RIP-specific settings.
+First, create a DHCP Pool with a range of IP addresses that the router should give to clients. You'll want to exclude addresses that are used by the router itself or any other statically-configured network devices in that subnet.
 
 ```bash
-/routing rip instance
-add name=default redistribute=connected,static originate-default=never
+ip pool add name=pool1 ranges=10.0.1.1-10.0.1.253
+ip pool print
 ```
 
-* `name=default` assigns a name to the RIP instance.
-* `redistribute=connected,static` specifies that connected and static routes will be advertised.
-* `originate-default=never` ensures that the default route is not advertised unless explicitly configured.
-
-### **2.2 Configure Interface Templates**
-
-Next, define interface templates to associate interfaces with the RIP instance. This replaces the previous method of adding networks directly.
-
-#### **Router 1**
+Second, enable a DHCP server on a specific interface, using a specific pool of IP addresses, and offering IP address "leases" for a specified time period. Set `disabled=no` to enable this server.
 
 ```bash
-/routing rip interface-template
-add interfaces=ether1 instance=default
-add interfaces=ether2 instance=default
+ip dhcp-server add interface=ether1 address-pool=pool1 lease-time=24h name=dhcp1 disabled=no
+ip dhcp-server print
 ```
 
-#### **Router 2**
+Finally, configure DHCP to communicate the subnet information, desired DNS servers, and default gateway to clients. Just use Google Public DNS here (8.8.8.8 and 8.8.4.4), despite this network not being connected to the Internet yet.
 
 ```bash
-/routing rip interface-template
-add interfaces=ether1 instance=default
-add interfaces=ether3 instance=default
-add interfaces=ether4 instance=default
+ip dhcp-server network add address=10.0.1.0/24 dns-server=8.8.8.8,8.8.4.4 gateway=10.0.1.254
+ip dhcp-server network print
+```
+After configuring clients (see below), you can check on the router to see which IP addresses have been assigned to which clients.
+
+```bash
+ip dhcp-server lease print
 ```
 
-#### **Router 3**
+For this Lab , you'll want to configure Router 1 to provide addresses for Subnet 1, and Router 2 to provide addresses for Subnet 2.
 
+### For Clients
+
+In the GNS3 VPCS, you can enable DHCP at the command line:
 ```bash
-/routing rip interface-template
-add interfaces=ether1 instance=default
-add interfaces=ether2 instance=default
+ip dhcp      # Request IP address via DHCP
+show ip      # See what address you were assigned
+save         # Save the configuration
 ```
 
-*Note:* Replace `etherX` with the actual interface names corresponding to your network topology.
+   - Tip 1: If you make a mistake, clear ip will reset the VPCS network.
+   - TIp 2: If you shut down and re-launch your network, the VPCS will boot more quickly than the routers, attempt DHCP immediately, and fail. You can always re-run ip dhcp to tell the simulated PC to "try it again". In a real computer, this is less of an issue, as DHCP will keep trying repeatedly.
 
-### **2.3 Verify RIP Configuration**
+In the GNS3 Webterm, you can enable DHCP via the unit preferences. Right-click on the module in the network map, select "Configure", and then select "Edit" in the network configuration area. Uncomment the following lines, which represents the contents of the file /etc/network/interfaces, a common Linux config file to specify network settings.
 
-1. **Check Learned RIP Routes:**
+```
+auto eth0
+iface eth0 inet dhcp
+```
 
-   ```bash
-   /ip route print where protocol=rip
-   ```
+Once the Webterm is booted and accessible over VNC, you can launch a terminal on it and find the assigned IP address via `ifconfig` or `ip addr`, the two usual Linux commands for finding information about network interfaces.
 
-This command displays routes learned via RIP.
+## Test Network
 
-2. **Test Connectivity:**
+For testing, ensure that PC1 can successfully ping PC2 and and Webterm-1.
 
-   From **PC1**, attempt to ping **PC3** (e.g., `ping 192.168.3.2`) to verify end-to-end connectivity through the RIP-configured routers.
+## Lab Submission
 
----
+Submit the following items to the Lab 6 Canvas assignment:
 
-## **Step 3: Configure OSPF (Open Shortest Path First)**
-
-### **3.1 Enable OSPF on Router 1**
-
-````bash
-/routing ospf instance
-set default router-id=1.1.1.1:contentReference[oaicite:9]{index=9}
-
-```bash
-/routing ospf interface-template
-add interfaces=ether1 area=backbone
-add interfaces=ether2 area=backbone:contentReference[oaicite:12]{index=12}
-````
-
-### **3.2 Enable OSPF on Router 2**
-
-````bash
-/routing ospf instance
-set default router-id=2.2.2.2:contentReference[oaicite:15]{index=15}
-
-```bash
-/routing ospf interface-template
-add interfaces=ether1 area=backbone
-add interfaces=ether3 area=backbone
-add interfaces=ether4 area=backbone:contentReference[oaicite:18]{index=18}
-````
-
-### **3.3 Enable OSPF on Router 3**
-
-````bash
-/routing ospf instance
-set default router-id=3.3.3.3:contentReference[oaicite:21]{index=21}
-
-```bash
-/routing ospf interface-template
-add interfaces=ether1 area=backbone
-add interfaces=ether2 area=backbone:contentReference[oaicite:24]{index=24}
-````
-
-*Note:* Replace `etherX` with the actual interface names corresponding to your network topology.
-
----
-
-### **Verify OSPF Configuration**
-
-1. **Check OSPF Neighbor Relationships:**
-
-   ```bash
-   /routing ospf neighbor print
-   ```
-
-   This command displays the current OSPF neighbors and their states.
-
-2. **Test Connectivity:**
-
-   From **PC1**, attempt to ping **PC3** (e.g., `ping 192.168.3.2`) to verify end-to-end connectivity through the OSPF-configured routers.
-
----
-
-## **4. Conclusion & Next Steps**  
-### **What We Achieved:**  
-✔ Configured **RIP and OSPF** on three Mikrotik routers.  
-✔ Verified routing using **ping tests** and **route tables**.  
+   - Provide a screenshot showing your GNS3 topology
+   - Provide a screenshot showing successful pings from PC1 to PC2 and Webterm
+   - Provide a screenshot with the Router1 web console (via VNC on webterm-1) showing DHCP Leases. (Go under WebFig->IP->DHCP Server->Leases)
+   - Provide a screenshot showing the output of `routing rip route print` on Router2
+   - Provide a Wireshark .pcapng file showing the 4 "DORA" (Discovery, Offer, Request, and Acknowledgement) packets from DHCP for one of the VPCS systems. You may need to do a `clear ip` and `ip dhcp` on a VPCS to trigger a DHCP conversation while you are doing packet capture. Filter your Wireshark packet list to only include DHCP (via `bootp.option.type == 53`), mark those packets, and export only the marked packets to a new file for submission. Your submitted file should only contain 4 packets, no more! (and no less)
+      - Tip: If you want to capture some packets from within the simulated GNS3 network, how do you do that?
+   - Provide a Wireshark .pcapng file showing what a RIPv2 "Response" broadcast looks like on the link between Router1 and Router2. Filter your Wireshark packet list to only include RIP (via rip), mark a few of the endless list of identical broadcasts, and export only the marked packets to a new file for submission.
